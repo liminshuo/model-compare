@@ -4,7 +4,7 @@
 
 ## 在线访问（GitHub Pages）
 
-https://schihhsin.github.io/model-compare/
+https://liminshuo.github.io/model-compare/
 
 | 页面 | 文件 | 说明 |
 |------|------|------|
