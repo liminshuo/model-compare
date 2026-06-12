@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>大模型回答质量 · 度量指标框架</title>
+  <style>
+    :root {
+      --cuda: #76b900; --cann: #e60012;
+      --bg: #f8f9fc; --card: #fff; --text: #1a1d26;
+      --muted: #5c6370; --border: #e2e6ef;
+      --accent: #3b5bdb; --accent-light: #edf2ff;
+      --exec: #2563eb; --exec-bg: #eff6ff;
+      --content: #7c3aed; --content-bg: #f5f3ff;
+      --output: #059669; --output-bg: #ecfdf5;
+      --shadow: 0 4px 24px rgba(26,29,38,.08);
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg); color: var(--text); line-height: 1.6;
+    }
+    header {
+      background: linear-gradient(135deg, #1a1d26 0%, #2d3561 100%);
+      color: #fff; padding: 2rem;
+    }
+    header h1 { font-size: 1.6rem; margin-bottom: .4rem; }
+    header p { opacity: .85; font-size: .92rem; max-width: 920px; }
+    .pagenav { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: 1rem; }
+    .pagenav a {
+      color: #fff; text-decoration: none; font-size: .82rem;
+      padding: .35rem .85rem; border-radius: 6px;
+      border: 1px solid rgba(255,255,255,.35);
+    }
+    .pagenav a:hover { background: rgba(255,255,255,.12); }
+    .pagenav a.cur { background: #fff; color: #2d3561; border-color: #fff; font-weight: 600; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
+    .intro {
+      background: var(--accent-light); border-left: 4px solid var(--accent);
+      border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1rem;
+      font-size: .88rem;
+    }
+    .research-box {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.15rem 1.25rem;
+      margin-bottom: 1.5rem; box-shadow: var(--shadow);
+      font-size: .84rem;
+    }
+    .research-box h3 { font-size: .95rem; margin-bottom: .6rem; }
+    .research-box ul { padding-left: 1.2rem; margin: .4rem 0; }
+    .research-box li { margin-bottom: .3rem; }
+    .weight-summary {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 900px) { .weight-summary { grid-template-columns: 1fr; } }
+    .weight-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: .85rem 1rem;
+      box-shadow: var(--shadow);
+    }
+    .weight-card.exec { border-top: 3px solid var(--exec); }
+    .weight-card.content { border-top: 3px solid var(--content); }
+    .weight-card.output { border-top: 3px solid var(--output); }
+    .weight-card h3 { font-size: .88rem; margin-bottom: .35rem; }
+    .weight-pct { font-size: 1.4rem; font-weight: 800; margin: .25rem 0; }
+    .weight-card.exec .weight-pct { color: var(--exec); }
+    .weight-card.content .weight-pct { color: var(--content); }
+    .weight-card.output .weight-pct { color: var(--output); }
+    .weight-card p { font-size: .76rem; color: var(--muted); line-height: 1.45; }
+    .w-tag {
+      display: inline-block; font-size: .58rem; font-weight: 800;
+      padding: .12rem .35rem; border-radius: 3px; margin-left: .25rem;
+      vertical-align: middle;
+    }
+    .w-h { background: #fef3c7; color: #92400e; }
+    .w-m { background: #e5e7eb; color: #374151; }
+    .w-l { background: #f3f4f6; color: #6b7280; }
+    .metric-table thead th .col-w {
+      display: block; font-size: .62rem; font-weight: 600;
+      color: var(--muted); margin-top: .2rem;
+    }
+    .compare-row td { background: #fff; font-size: .74rem; }
+    .compare-row th { background: #fff !important; color: var(--muted) !important; }
+    .layer-block { margin-bottom: 2.5rem; }
+    .layer-head {
+      display: flex; align-items: center; gap: .65rem;
+      margin-bottom: .85rem;
+    }
+    .layer-badge {
+      font-size: .72rem; font-weight: 800; color: #fff;
+      padding: .3rem .7rem; border-radius: 6px; letter-spacing: .04em;
+    }
+    .layer-badge.exec { background: var(--exec); }
+    .layer-badge.content { background: var(--content); }
+    .layer-badge.output { background: var(--output); }
+    .layer-head h2 { font-size: 1.1rem; }
+    .layer-head span { font-size: .82rem; color: var(--muted); }
+    .table-wrap {
+      overflow-x: auto; background: var(--card);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .metric-table {
+      width: 100%; border-collapse: collapse;
+      font-size: .78rem; min-width: 960px;
+    }
+    .metric-table th, .metric-table td {
+      border: 1px solid var(--border);
+      padding: .65rem .75rem; vertical-align: top;
+      text-align: left; background: #fff;
+    }
+    .metric-table thead th {
+      font-size: .8rem; font-weight: 700;
+      color: var(--text); min-width: 160px;
+      background: #fff;
+    }
+    .metric-table tbody th {
+      width: 88px; background: #fff;
+      font-size: .72rem; font-weight: 700; color: var(--muted);
+      white-space: nowrap;
+    }
+    .metric-table td ul {
+      margin: .25rem 0 0 1rem; padding: 0;
+    }
+    .metric-table td li { margin-bottom: .2rem; }
+    .metric-table .theory {
+      font-size: .72rem; color: #4338ca;
+      margin-top: .35rem; padding-top: .35rem;
+      border-top: 1px dashed var(--border);
+    }
+    .metric-table .theory b { color: #3730a3; }
+    .metric-table .formula {
+      font-size: .68rem; color: #1e3a8a; font-family: ui-monospace, monospace;
+      background: #f0f4ff; padding: .35rem .5rem; border-radius: 4px;
+      margin-top: .3rem; display: block; line-height: 1.45;
+    }
+    .glossary-box {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem; font-size: .76rem;
+      box-shadow: var(--shadow);
+    }
+    .glossary-box h3 { font-size: .92rem; margin-bottom: .65rem; }
+    .glossary-table-wrap {
+      overflow-x: auto; border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .glossary-table {
+      width: 100%; border-collapse: collapse; font-size: .76rem;
+    }
+    .glossary-table th, .glossary-table td {
+      border: 1px solid var(--border); padding: .6rem .7rem;
+      vertical-align: top; text-align: left;
+    }
+    .glossary-table thead th {
+      background: #fafbfe; font-size: .78rem; font-weight: 700;
+      white-space: nowrap;
+    }
+    .glossary-table tbody tr { background: #fff; }
+    .glossary-table tbody tr:hover { background: #fffbeb; }
+    .glossary-table .metric-name code {
+      font-size: .72rem; font-weight: 800;
+      background: #fef3c7; color: #92400e;
+      padding: .1rem .35rem; border-radius: 4px;
+      border: 1px solid #fcd34d;
+    }
+    .glossary-table .metric-name code[data-tip] {
+      cursor: help; text-decoration: underline dotted #b45309;
+    }
+    .glossary-table .formula-cell {
+      font-family: ui-monospace, monospace;
+      font-size: .68rem; color: #1e3a8a;
+      line-height: 1.45;
+    }
+    .glossary-table .ref-cell {
+      font-size: .7rem; color: var(--muted); line-height: 1.45;
+      min-width: 160px;
+    }
+    .glossary-table .ref-cell em {
+      font-style: normal; color: #4338ca; font-weight: 600;
+    }
+    .layer-pill {
+      display: inline-block; font-size: .62rem; font-weight: 800;
+      padding: .15rem .45rem; border-radius: 4px; white-space: nowrap;
+    }
+    .layer-pill.exec { background: var(--exec-bg); color: var(--exec); }
+    .layer-pill.content { background: var(--content-bg); color: var(--content); }
+    .layer-pill.output { background: var(--output-bg); color: var(--output); }
+    .auto-pill {
+      display: inline-block; font-size: .62rem; font-weight: 800;
+      padding: .15rem .45rem; border-radius: 4px; white-space: nowrap;
+    }
+    .auto-pill.full { background: #ecfdf5; color: #047857; }
+    .auto-pill.semi { background: #eff6ff; color: #1d4ed8; }
+    .auto-pill.manual { background: #f3f4f6; color: #4b5563; }
+    .glossary-table .auto-note {
+      display: block; margin-top: .25rem;
+      font-size: .65rem; color: var(--muted); line-height: 1.35;
+    }
+    .must-dim-legend {
+      display: flex; flex-wrap: wrap; gap: .45rem;
+      margin-bottom: 1.25rem; font-size: .74rem;
+    }
+    .dim-chip {
+      display: inline-flex; align-items: center; gap: .35rem;
+      padding: .35rem .65rem; border-radius: 6px;
+      border: 1px solid #fcd34d; background: #fffbeb;
+      font-weight: 600;
+    }
+    .dim-chip::before {
+      content: ''; width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0;
+      background: #f59e0b;
+    }
+    .metric-table code {
+      font-size: .7rem; background: #f3f4f6;
+      padding: .08rem .28rem; border-radius: 3px;
+    }
+    .metric-table code.core-metric {
+      background: #fef3c7; color: #92400e;
+      font-weight: 800; border: 1px solid #fcd34d;
+      box-shadow: 0 0 0 1px rgba(251,191,36,.25);
+    }
+    code.core-metric {
+      font-size: .75rem; background: #fef3c7; color: #92400e;
+      font-weight: 800; border: 1px solid #fcd34d;
+      padding: .08rem .28rem; border-radius: 3px;
+    }
+    [data-tip] {
+      cursor: help;
+      text-decoration: underline dotted #d97706;
+      text-underline-offset: 2px;
+    }
+    code.core-metric[data-tip] { text-decoration: underline dotted #b45309; }
+    .dim-chip[data-tip] { text-decoration: none; }
+    .dim-chip[data-tip]:hover { border-color: #f59e0b; }
+    .metric-tip {
+      position: fixed; z-index: 9999;
+      max-width: min(320px, calc(100vw - 24px));
+      padding: .6rem .75rem;
+      background: #1a1d26; color: #f8fafc;
+      font-size: .74rem; line-height: 1.5;
+      border-radius: 8px;
+      box-shadow: 0 10px 28px rgba(0,0,0,.22);
+      pointer-events: none;
+    }
+    .metric-tip[hidden] { display: none; }
+    .metric-table.exec thead th:nth-child(2),
+    .metric-table.exec tbody td:nth-child(2),
+    .metric-table.exec thead th:nth-child(4),
+    .metric-table.exec tbody td:nth-child(4),
+    .metric-table.exec thead th:nth-child(5),
+    .metric-table.exec tbody td:nth-child(5),
+    .metric-table.content thead th:nth-child(2),
+    .metric-table.content tbody td:nth-child(2),
+    .metric-table.content thead th:nth-child(3),
+    .metric-table.content tbody td:nth-child(3),
+    .metric-table.content thead th:nth-child(4),
+    .metric-table.content tbody td:nth-child(4),
+    .metric-table.output thead th:nth-child(5),
+    .metric-table.output tbody td:nth-child(5),
+    .metric-table.output thead th:nth-child(6),
+    .metric-table.output tbody td:nth-child(6),
+    .metric-table.output thead th:nth-child(7),
+    .metric-table.output tbody td:nth-child(7) {
+      background: #fffbeb;
+      box-shadow: inset 3px 0 0 #f59e0b;
+    }
+    .key-col-badge {
+      display: inline-block; font-size: .58rem; font-weight: 800;
+      padding: .1rem .35rem; border-radius: 3px; margin-right: .2rem;
+      background: #fef3c7; color: #92400e; vertical-align: middle;
+    }
+    .refs {
+      margin-top: 2rem; font-size: .78rem; color: var(--muted);
+    }
+    .refs h3 { font-size: .88rem; color: var(--text); margin-bottom: .5rem; }
+    .refs ol { padding-left: 1.25rem; }
+    .refs li { margin-bottom: .35rem; }
+    footer { text-align: center; padding: 2rem; color: var(--muted); font-size: .8rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container" style="padding:0;">
+      <h1>大模型回答质量 · 度量指标框架</h1>
+      <p>研究背景：开发者在<strong>同场景、同任务、同目标</strong>下完成算子开发 workflow，对比大模型在 <strong>CUDA</strong> 与 <strong>CANN</strong> 两条路径上的<strong>回答质量差异</strong>与<strong>执行效率差异</strong>。</p>
+      <nav class="pagenav">
+        <a href="cuda-cann-journey-map.html">页面一：旅程地图</a>
+        <a href="operator-novice-workflow.html">页面二：算子 Workflow</a>
+        <a href="llm-metrics-framework.html" class="cur">页面三：度量指标</a>
+        <a href="llm-metrics-results.html">页面四：度量结果</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="research-box">
+      <h3>研究设计 · 配对对照</h3>
+      <ul>
+        <li><strong>固定变量：</strong>场景（如环节 1「判断要不要自研」）、任务（Hello World vector add）、用户角色（新手）、提问意图（同一条「问 / 做」）。</li>
+        <li><strong>对照变量：</strong>技术栈路径 — CUDA（PyTorch + cuDNN/cuBLAS） vs CANN（torch_npu + Ascend C 生态）。</li>
+        <li><strong>两个因变量：</strong>① <em>质量</em>（内容对不对、全不全、能不能用）；② <em>效率</em>（多少步、多少轮、多久到结论）。</li>
+        <li><strong>聚焦维度（主报告高亮）：</strong>检索深度与精准度、路径效率、多轮收敛、官方信息占比、信息时效性、知识覆盖率、快速给答（输出层）、代码简洁性、可执行性与完整性。</li>
+        <li><strong>记录单元：</strong>每一对配对问题 → 两次会话（CUDA / CANN 各一）→ 聚焦维度 Δ；非高亮列视任务选填。</li>
+      </ul>
+    </div>
+
+    <div class="weight-summary">
+      <div class="weight-card exec">
+        <h3>执行层 · 效率差异</h3>
+        <div class="weight-pct">30%</div>
+        <p>回答「哪边更快帮用户到达环节产出」。CANN 文档分散、概念断层多，预期在<strong>路径效率、多轮收敛</strong>上差异最大；检索深度用于解释效率差距来源。</p>
+      </div>
+      <div class="weight-card content">
+        <h3>内容层 · 质量差异</h3>
+        <div class="weight-pct">45%</div>
+        <p>本研究<strong>核心层</strong>。同场景下 CUDA 回答常更 grounded；CANN 侧易出 API 幻觉、漏版本配套、漏 torch_npu 清单。<strong>正确性、幻觉、覆盖深度</strong>权重最高。</p>
+      </div>
+      <div class="weight-card output">
+        <h3>输出层 · 可用性差异</h3>
+        <div class="weight-pct">25%</div>
+        <p>回答「哪边输出更能直接落地」。<strong>代码简洁性</strong>与<strong>快速给答</strong>在含代码/决策环节权重提升。</p>
+      </div>
+    </div>
+
+    <div class="intro">
+      <strong>度量原则：</strong>高亮列 = 研究<strong>聚焦维度</strong>；列内 <code class="core-metric">金色指标</code> = 该列主指标、建议必报 Δ，同列其余为可选辅助。非高亮列（工具调用、正确性等）保留参考，按环节选用。
+      标签 <span class="w-tag w-h">高</span> <span class="w-tag w-m">中</span> <span class="w-tag w-l">低</span> 表示层内权重优先级。<strong>金色指标 hover 可查看说明。</strong>
+    </div>
+
+    <div class="must-dim-legend">
+      <span class="dim-chip" data-tip="检索是否覆盖 Gold 官方文档且排序靠前。主指标 Recall@k + MRR：命中率与首个相关文档排名倒数。">检索深度与精准度 · Recall@k / MRR</span>
+      <span class="dim-chip" data-tip="从提问到环节产出的有效步骤是否冗余。主指标 NPL = STS / 专家最短路径，≤1.2 为优。">路径效率 · NPL</span>
+      <span class="dim-chip" data-tip="多轮会话中多久到达可停止结论。主指标 TTC = t_conclusion − t_query（秒或轮次）。">多轮收敛 · TTC</span>
+      <span class="dim-chip" data-tip="单次回答多快给出可停止的决策结论。主指标 TTFD：决策句在全文中的 token 位置比，≤0.25 为优。">快速给答 · TTFD（输出层）</span>
+      <span class="dim-chip" data-tip="依据是否来自该栈官方一手源（非 CUDA 博客充当 CANN 依据）。主指标 OSR = 官方域引用 / 总引用。">官方信息占比 · OSR</span>
+      <span class="dim-chip" data-tip="API、支持清单、CANN 版本是否与真实环境一致。主指标 HalRate：编造/不可验证陈述占比，≤0.05 为优。">信息时效性 · HalRate</span>
+      <span class="dim-chip" data-tip="是否覆盖环节栈特有检查项（如 torch_npu 清单、CANN 配套）。主指标 Cov@checklist = 命中项 / 必备项。">知识覆盖率 · Cov@checklist</span>
+      <span class="dim-chip" data-tip="同功能代码是否足够短、简单。主指标 CSC = 参考最简 LoC / 回答 LoC，环节 5–6 必评。">代码简洁性 · CSC</span>
+      <span class="dim-chip" data-tip="脚本/命令能否少改即跑、闭环到环节产出。主指标 pass@1：代码块一次 sandbox 试跑成功率。">可执行性与完整性 · pass@1</span>
+    </div>
+
+    <div class="glossary-box">
+      <h3>核心指标速查（Gold Set 说明）</h3>
+      <p style="font-size:.78rem;color:var(--muted);margin-bottom:.5rem;">与三层表格高亮列主指标一致，建议每条配对必报 Δ。指标名称 hover 可查看补充说明。</p>
+      <p style="font-size:.72rem;color:var(--muted);margin-bottom:.75rem;">
+        <span class="auto-pill full">全自动</span> 规则+日志/script 可复算 &nbsp;
+        <span class="auto-pill semi">半自动</span> 需预定义 Gold/checklist，部分步骤可脚本 &nbsp;
+        <span class="auto-pill manual">需标注</span> 依赖人工判定或专家 rubric
+      </p>
+      <div class="glossary-table-wrap">
+        <table class="glossary-table">
+          <thead>
+            <tr>
+              <th>指标名称</th>
+              <th>指标定义</th>
+              <th>计算方法</th>
+              <th>自动化程度</th>
+              <th>所属模块</th>
+              <th>所属层</th>
+              <th>文献依据</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="metric-name"><code data-tip="前 k 次检索或引用中，命中环节 Gold 文档集的比例。CANN 侧常需更多检索才覆盖 hiascend 官方源。">Recall@k</code></td>
+              <td>前 k 次检索/引用中，命中<strong>环节 Gold 文档集</strong>的比例；衡量是否找全官方依据。</td>
+              <td class="formula-cell">Recall@k = |Relevant ∩ Top-k| / |Relevant|</td>
+              <td><span class="auto-pill semi">半自动</span><span class="auto-note">检索 log 可自动解析；Gold 文档集与相关性需预定义</span></td>
+              <td>检索深度与精准度</td>
+              <td><span class="layer-pill exec">执行层</span></td>
+              <td class="ref-cell"><em>Manning et al., 2008</em> 经典 IR；<em>Pirolli &amp; Card, 1999</em> 信息觅食</td>
+            </tr>
+            <tr>
+              <td class="metric-name"><code data-tip="首个相关 Gold 文档排名的倒数。越接近 1 表示越早找到官方文档，MRR≥0.5 为优。">MRR</code></td>
+              <td>首个相关 Gold 文档排名的<strong>倒数均值</strong>；衡量检索排序是否把官方文档排前面。</td>
+              <td class="formula-cell">MRR = mean(1 / rank<sub>first relevant</sub>)</td>
+              <td><span class="auto-pill semi">半自动</span><span class="auto-note">同 Recall@k，依赖 Gold 相关性判定</span></td>
+              <td>检索深度与精准度</td>
+              <td><span class="layer-pill exec">执行层</span></td>
+              <td class="ref-cell"><em>Manning et al., 2008</em> Mean Reciprocal Rank 标准定义</td>
+            </tr>
+            <tr>
+              <td class="metric-name"><code data-tip="有效步骤数 / 专家最短路径。>2.0 视为路径冗余，≤1.2 为优。">NPL</code></td>
+              <td>从提问到环节产出的<strong>有效步骤数</strong>相对专家最短路径的归一化长度。</td>
+              <td class="formula-cell">NPL = STS / STS<sub>baseline</sub></td>
+              <td><span class="auto-pill semi">半自动</span><span class="auto-note">步数可计 log；「有效步骤」与 baseline 需专家路径</span></td>
+              <td>路径效率</td>
+              <td><span class="layer-pill exec">执行层</span></td>
+              <td class="ref-cell"><em>Card et al., 1980</em> GOMS/KLM 最小操作路径；HCI 任务效率测度</td>
+            </tr>
+            <tr>
+              <td class="metric-name"><code data-tip="从提问到出现可停止结论的时间或轮次。多轮 Agent 场景主指标。">TTC</code></td>
+              <td>从提问到出现<strong>可停止结论</strong>的时间（秒）或对话轮次。</td>
+              <td class="formula-cell">TTC = t<sub>conclusion</sub> − t<sub>query</sub>（或轮次数）</td>
+              <td><span class="auto-pill semi">半自动</span><span class="auto-note">时间戳/轮次客观；「结论出现」需 slot 规则或标注</span></td>
+              <td>多轮收敛</td>
+              <td><span class="layer-pill exec">执行层</span></td>
+              <td class="ref-cell"><em>Young et al., 2013</em> 任务型对话；<em>Mehri et al., 2019</em> USR；<em>Miller, 1968</em> 响应时间</td>
+            </tr>
+            <tr>
+              <td class="metric-name"><code data-tip="官方域引用数 / 总引用数。CANN 应引用 hiascend.com，错引 CUDA 源会降低分。">OSR</code></td>
+              <td>引用中来自<strong>该栈官方一手源</strong>的比例（非 CUDA 博客充当 CANN 依据）。</td>
+              <td class="formula-cell">OSR = #official_cites / #total_cites</td>
+              <td><span class="auto-pill full">全自动</span><span class="auto-note">栈级域名白名单 + URL 抽取即可复算</span></td>
+              <td>官方信息占比</td>
+              <td><span class="layer-pill content">内容层</span></td>
+              <td class="ref-cell">CRAAP 信源评估框架；Epistemic trust；引用权威分析（bibliometrics）</td>
+            </tr>
+            <tr>
+              <td class="metric-name"><code data-tip="编造或不可验证 API/事实占全部陈述的比例。CANN 侧 torch_npu 幻觉为 fatal，≤0.05 为优。">HalRate</code></td>
+              <td>编造或不可验证的 API、支持清单、版本信息等占全部可核查陈述的比例。</td>
+              <td class="formula-cell">HalRate = #hallucinated_claims / #total_claims</td>
+              <td><span class="auto-pill manual">需标注</span><span class="auto-note">claim 分解与 API/版本真伪需对照 Gold 或人工核查</span></td>
+              <td>信息时效性与 API 幻觉</td>
+              <td><span class="layer-pill content">内容层</span></td>
+              <td class="ref-cell"><em>Ji et al., 2023</em> NLG 幻觉综述；HaluEval 实体级 P/R 评估范式</td>
+            </tr>
+            <tr>
+              <td class="metric-name"><code data-tip="环节必备 checklist 命中比例。同构 checklist 下比较 CUDA/CANN 是否系统性漏项。">Cov@checklist</code></td>
+              <td>回答覆盖环节<strong>栈特有检查项</strong>（如 torch_npu 清单、CANN 配套）的比例。</td>
+              <td class="formula-cell">Cov@checklist = |hit ∩ required| / |required|</td>
+              <td><span class="auto-pill semi">半自动</span><span class="auto-note">checklist 固定后可关键词/NER；深度分级（DOK）常需标注</span></td>
+              <td>知识覆盖率</td>
+              <td><span class="layer-pill content">内容层</span></td>
+              <td class="ref-cell"><em>Es et al., 2023</em> RAGAS Context Recall；集合覆盖率；<em>Webb, 2002</em> DOK 深度分级</td>
+            </tr>
+            <tr>
+              <td class="metric-name"><code data-tip="代码块复制到 sandbox 一次试跑的成功率。含代码环节建议必报。">pass@1</code></td>
+              <td>回答中代码块复制到 sandbox <strong>一次试跑</strong>是否成功；衡量能否少改即跑。</td>
+              <td class="formula-cell">pass@1 = #run_ok / #code_blocks</td>
+              <td><span class="auto-pill full">全自动</span><span class="auto-note">sandbox 试跑，exit code 客观</span></td>
+              <td>可执行性与完整性</td>
+              <td><span class="layer-pill output">输出层</span></td>
+              <td class="ref-cell"><em>Chen et al., 2021</em> HumanEval pass@k；JTBD 任务完成度</td>
+            </tr>
+            <tr>
+              <td class="metric-name"><code data-tip="决策句首次出现的 token 位置 / 全文 token 数。≤0.25 为优，表示前 25% 即给结论。">TTFD</code></td>
+              <td>单次回答中，<strong>决策句</strong>（自研/组合/等）首次出现的位置占全文比例。</td>
+              <td class="formula-cell">TTFD = tokens<sub>decision</sub> / tokens<sub>total</sub></td>
+              <td><span class="auto-pill semi">半自动</span><span class="auto-note">token 计数客观；决策句可用规则或双盲标注</span></td>
+              <td>快速给答</td>
+              <td><span class="layer-pill output">输出层</span></td>
+              <td class="ref-cell"><em>Miller, 1968</em> 人机对话响应时间；Grice 合作原则·量准则</td>
+            </tr>
+            <tr>
+              <td class="metric-name"><code data-tip="参考最简实现 LoC / 回答代码 LoC。≥1 表示足够简洁，环节 5–6 必评。">CSC</code></td>
+              <td>同功能下，回答代码相对<strong>参考最简实现</strong>是否足够短、足够简单。</td>
+              <td class="formula-cell">CSC = LoC<sub>ref</sub> / LoC<sub>answer</sub></td>
+              <td><span class="auto-pill full">全自动</span><span class="auto-note">参考实现固定后 LoC 可脚本统计</span></td>
+              <td>代码简洁性</td>
+              <td><span class="layer-pill output">输出层</span></td>
+              <td class="ref-cell"><em>McCabe, 1976</em> 圈复杂度；Clean Code 简洁原则；ISO/IEC 25010 可维护性</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:.65rem;color:var(--muted);">Gold Set 由研究者按环节预定义：如环节 1 CUDA 含 {torch.add 文档, cuBLAS L1, Custom Op 教程}；CANN 含 {torch_npu 清单, CANN 配套表, Ascend C 流程}。配对任务共用<strong>同构 checklist</strong>，栈特有项分开列。完整书目见页底<strong>主要理论参考文献</strong>。</p>
+      <p style="margin-top:.5rem;"><a href="llm-metrics-results.html?pair=s1-q1" style="color:var(--accent);font-weight:600;">→ 查看环节 1 首对问题实测跑分（页面四）</a></p>
+    </div>
+
+    <!-- 执行层 -->
+    <section class="layer-block">
+      <div class="layer-head">
+        <span class="layer-badge exec">执行层 · 30%</span>
+        <h2>Process · 效率差异：大模型「找得多快、收敛多快」</h2>
+        <span>主因变量：路径步数、轮次、TTC｜CANN 预期劣势项</span>
+      </div>
+      <div class="table-wrap">
+        <table class="metric-table exec">
+          <thead>
+            <tr>
+              <th></th>
+              <th>检索深度与精准度<span class="key-col-badge">重点</span><span class="w-tag w-h">高</span><span class="col-w">层内 20%</span></th>
+              <th>工具调用质量<span class="w-tag w-m">中</span><span class="col-w">层内 25%</span></th>
+              <th>路径效率<span class="key-col-badge">重点</span><span class="w-tag w-h">高</span><span class="col-w">层内 30%</span></th>
+              <th>多轮收敛<span class="key-col-badge">重点</span><span class="w-tag w-h">高</span><span class="col-w">层内 25%</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>定义</th>
+              <td>检索是否覆盖<strong>该栈</strong>决策所需官方源（CUDA：PyTorch+NVIDIA；CANN：torch_npu+昇腾），且页面与算子相关。</td>
+              <td>Agent 工具调用是否匹配场景（查文档 / 跑命令 / 扫仓库），且<strong>栈相关命令</strong>可成功执行。</td>
+              <td>从提问到环节产出（自研/组合/等框架）的<strong>有效步骤数</strong>；冗余检索与无效生成计入惩罚。</td>
+              <td>配对任务下，是否在有限轮次内给出<strong>可停止的明确结论</strong>；多快出现决策句（TTFD）与首响（TTFR）。</td>
+            </tr>
+            <tr>
+              <th>核心<br>指标</th>
+              <td>
+                <ul>
+                  <li><code class="core-metric" data-tip="前 k 次检索或引用中，命中环节 Gold 文档集的比例。CANN 侧常需更多检索才覆盖 hiascend 官方源。">Recall@k</code> — Gold 文档命中率 <em style="font-size:.65rem;color:var(--muted)">必报</em></li>
+                  <li><code class="core-metric" data-tip="Mean Reciprocal Rank：首个相关 Gold 文档排名的倒数。越接近 1 表示越早找到官方文档，MRR≥0.5 为优。">MRR</code> — 首个相关文档排名 <em style="font-size:.65rem;color:var(--muted)">必报</em></li>
+                  <li><code>nDCG@k</code> — 排序质量</li>
+                  <li><code>Context Precision</code>（RAGAS）</li>
+                </ul>
+                <span class="formula">Recall@k = |Relevant ∩ Top-k| / |Relevant|<br>MRR = 1/rank<sub>first relevant</sub></span>
+              </td>
+              <td>
+                <ul>
+                  <li><code>Tool Success Rate</code> (TSR)</li>
+                  <li><code>Tool Selection Accuracy</code></li>
+                  <li><code>Invocation Precision / Recall</code></li>
+                  <li>Observation Utilization Rate</li>
+                </ul>
+                <span class="formula">TSR = #success / #invocations<br>Util = cited_obs / total_obs</span>
+              </td>
+              <td>
+                <ul>
+                  <li><code>STS</code> Steps-to-Success</li>
+                  <li><code class="core-metric" data-tip="Normalized Path Length = 有效步骤数 / 专家最短路径。衡量路径是否冗余，>2.0 视为绕路过多。">NPL</code> Normalized Path Length <em style="font-size:.65rem;color:var(--muted)">必报</em></li>
+                  <li><code>DE</code> Dialogue Efficiency</li>
+                  <li>Redundant Step Rate</li>
+                </ul>
+                <span class="formula">NPL = STS / STS<sub>baseline</sub></span>
+              </td>
+              <td>
+                <ul>
+                  <li><code class="core-metric" data-tip="Time-to-Conclusion = 从提问到出现可停止结论的时间或轮次。多轮 Agent 场景主指标。">TTC</code> Time-to-Conclusion <em style="font-size:.65rem;color:var(--muted)">必报</em></li>
+                  <li><code>DE</code> Dialogue Efficiency</li>
+                  <li><code>TTFD</code> Time-to-First-Decision</li>
+                  <li><code>TTFR</code> Time-to-First-Response</li>
+                </ul>
+                <span class="formula">TTC = t<sub>conclusion</sub> − t<sub>query</sub>；单轮 TTFD 见输出层</span>
+              </td>
+            </tr>
+            <tr class="compare-row">
+              <th>对照<br>Δ 指标</th>
+              <td><code class="core-metric" data-tip="配对差值：Recall@k 的 CANN−CUDA 差。正值表示 CANN 检索覆盖 Gold 更差。">ΔRecall@k</code> 必报；<code class="core-metric" data-tip="配对差值：MRR 的 CANN−CUDA 差。负值表示 CANN 首个相关文档排得更靠后。">ΔMRR</code> 必报；<code>ΔnDCG@k</code> 可选。</td>
+              <td><code>ΔTSR</code>、<code>ΔUtil</code>：NPU 环境缺失导致的工具失败差。</td>
+              <td><code class="core-metric" data-tip="配对差值：路径长度归一化指标的 CANN−CUDA 差。正值表示 CANN 侧步骤/路径更长。">ΔNPL</code> 必报；<code>ΔSTS</code>、<code>ΔDE</code> 可选。</td>
+              <td><code class="core-metric" data-tip="配对差值：到达结论时间的 CANN−CUDA 差。正值表示 CANN 侧更慢收敛。">ΔTTC</code> 必报；<code>ΔDE</code> 可选。</td>
+            </tr>
+            <tr>
+              <th>度量<br>协议</th>
+              <td>预构建环节 Gold 文档集（按栈）；标注检索/引用 top-k 相关性（0/1/2）；算 IR 指标。</td>
+              <td>解析 Agent trace：tool name、args、exit_code；对照 ToolBench 分类（search/code/read）。</td>
+              <td>从 session log 计有效 action；baseline 取专家最短路径 STS<sub>ref</sub>。</td>
+              <td>定义环节 slot（如 decision, evidence, version）；标注每轮 slot 填充；Success=产出+正确。</td>
+            </tr>
+            <tr>
+              <th>阈值<br>参考</th>
+              <td>Recall@5≥0.8 且 MRR≥0.5 为优；CANN 侧 Recall 常低于 CUDA。</td>
+              <td>TSR≥0.9；Util≥0.7 表示工具结果真正进入回答。</td>
+              <td>NPL≤1.2 为优；>2.0 视为路径冗余。</td>
+              <td>DE≥0.5（≤2 轮成功）；GDR=0 为优。</td>
+            </tr>
+            <tr>
+              <th>理论<br>依据</th>
+              <td class="theory"><b>经典 IR</b>（Manning et al., 2008）：Recall@k、MRR、nDCG；<b>信息觅食</b>（Pirolli & Card, 1999）：patch 选择效率。</td>
+              <td class="theory"><b>ReAct</b>（Yao et al., 2022）；<b>ToolBench / API-Bank</b>：tool selection &amp; success；<b>Plan-and-Solve</b> 工具链评估。</td>
+              <td class="theory"><b>GOMS / KLM</b>（Card et al., 1980）：最小操作路径；<b>HCI 任务效率</b>：TTC、TTFA 标准测度。</td>
+              <td class="theory"><b>任务型对话</b>（Young et al., 2013；Mehri et al., 2019 USR）：success rate、slot filling；<b>Grice 合作原则</b>： relevance &amp; quantity。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 内容层 -->
+    <section class="layer-block">
+      <div class="layer-head">
+        <span class="layer-badge content">内容层 · 45%</span>
+        <h2>Content · 质量差异：大模型「说得对不对、全不全」</h2>
+        <span>主因变量：事实准确率、栈覆盖｜本研究最核心层</span>
+      </div>
+      <div class="table-wrap">
+        <table class="metric-table content">
+          <thead>
+            <tr>
+              <th></th>
+              <th>官方信息占比<span class="key-col-badge">重点</span><span class="w-tag w-h">高</span><span class="col-w">层内 20%</span></th>
+              <th>信息时效性与 API 幻觉<span class="key-col-badge">重点</span><span class="w-tag w-h">高</span><span class="col-w">层内 25%</span></th>
+              <th>知识覆盖率<span class="key-col-badge">重点</span><span class="w-tag w-h">高</span><span class="col-w">层内 30%</span></th>
+              <th>正确性与事实性<span class="w-tag w-h">高</span><span class="col-w">层内 25%</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>定义</th>
+              <td>依据是否来自<strong>该栈官方一手源</strong>（非把 CUDA 博客当 CANN 依据）。</td>
+              <td>API / 支持清单 / CANN 版本是否与真实环境一致；<strong>编造 torch_npu 支持</strong>属致命项。</td>
+              <td>是否覆盖该环节<strong>栈特有检查项</strong>（CANN：torch_npu 清单、CANN 配套、NPU 试跑；CUDA：cuDNN 路径）。</td>
+              <td>可核查陈述的准确率；错误是否导致<strong>错误决策</strong>（误判已支持→误不自研）。</td>
+            </tr>
+            <tr>
+              <th>核心<br>指标</th>
+              <td>
+                <ul>
+                  <li><code class="core-metric" data-tip="Official Source Ratio = 官方域引用数 / 总引用数。CANN 任务应引用 hiascend.com，错引 CUDA 源会降低 Stack-Valid。">OSR</code> Official Source Ratio <em style="font-size:.65rem;color:var(--muted)">必报</em></li>
+                  <li><code>Stack-Valid Rate</code></li>
+                  <li><code>Citation Precision</code></li>
+                </ul>
+                <span class="formula">OSR = #official / #total cites</span>
+              </td>
+              <td>
+                <ul>
+                  <li><code class="core-metric" data-tip="幻觉率 = 编造或不可验证的 API/事实数 / 陈述总数。CANN 侧编造 torch_npu 支持属致命项，≤0.05 为优。">HalRate</code> 幻觉率 <em style="font-size:.65rem;color:var(--muted)">必报</em></li>
+                  <li><code>API Entity P/R/F1</code></li>
+                  <li><code>VerAcc</code> Version Accuracy</li>
+                  <li><code>Temporal Validity Rate</code></li>
+                </ul>
+                <span class="formula">HalRate = #hallucinated / #claims<br>P/R vs API Gold Inventory</span>
+              </td>
+              <td>
+                <ul>
+                  <li><code class="core-metric" data-tip="环节必备知识单元覆盖率 = |回答命中 ∩ checklist| / |checklist|。同构 checklist 下比较 CUDA/CANN 是否系统性漏项。">Cov@checklist</code> <em style="font-size:.65rem;color:var(--muted)">必报</em></li>
+                  <li><code>DWC</code> DOK 加权深度</li>
+                  <li><code>Context Recall</code>（RAGAS）</li>
+                  <li>Depth Level L1/L2/L3 分布</li>
+                </ul>
+                <span class="formula">DWC = Σ w·DOK / Σ w<br>L3=给验证步骤, L2=解释, L1=提及</span>
+              </td>
+              <td>
+                <ul>
+                  <li><code>Faithfulness</code>（RAGAS）</li>
+                  <li><code>Label Accuracy</code>（FEVER）</li>
+                  <li><code>Claim-level F1</code></li>
+                  <li><code>Decision Error Rate</code> (DER)</li>
+                </ul>
+                <span class="formula">Faith = supported / total_claims<br>DER = wrong_decision / total</span>
+              </td>
+            </tr>
+            <tr class="compare-row">
+              <th>对照<br>Δ 指标</th>
+              <td><code class="core-metric" data-tip="配对差值：官方信息占比 CANN−CUDA。负值表示 CANN 回答更少引用官方源。">ΔOSR</code> 必报；<code>ΔStack-Valid</code> 可选。</td>
+              <td><code class="core-metric" data-tip="配对差值：幻觉率 CANN−CUDA。正值表示 CANN 侧幻觉更多。">ΔHalRate</code> 必报；<code>ΔAPI-F1</code>、<code>ΔVerAcc</code> 可选。</td>
+              <td><code class="core-metric" data-tip="配对差值：checklist 覆盖率 CANN−CUDA。负值表示 CANN 漏覆盖栈特有检查项。">ΔCov@checklist</code> 必报；<code>ΔDWC</code> 可选。</td>
+              <td><code>ΔFaithfulness</code>、<code>ΔDER</code>：致命决策错误栈分布。</td>
+            </tr>
+            <tr>
+              <th>度量<br>协议</th>
+              <td>维护栈级域名白名单（CUDA/CANN）；抽取 URL 与「据官方文档」声明；CRAAP 分级。</td>
+              <td>NER 抽取 API/算子名；对照 Gold Inventory + docs 验证；版本对照 release notes。</td>
+              <td>环节 checklist 二元/三级标注；RAGAS context recall 用 Gold facts 作 reference。</td>
+              <td>Atomic claim decomposition → SUPPORTS/REFUTES/NEI（FEVER）；DER 仅计影响环节产出的错误。</td>
+            </tr>
+            <tr>
+              <th>阈值<br>参考</th>
+              <td>OSR≥0.7 且 Stack-Valid≥0.9；CANN 错引 CUDA 源 → Stack-Valid 下降。</td>
+              <td>HalRate≤0.05 为优；API-F1≥0.9；VerAcc=1.0 为硬性要求（版本类）。</td>
+              <td>Cov@checklist≥0.85；Context Recall≥0.8（RAGAS 常用区间）。</td>
+              <td>Faithfulness≥0.9；DER=0 为优；任一 fatal claim → 样本 invalid。</td>
+            </tr>
+            <tr>
+              <th>理论<br>依据</th>
+              <td class="theory"><b>CRAAP / 信源评估</b>；<b>Epistemic trust</b>；引用分析（bibliometrics）中 authority 概念。</td>
+              <td class="theory"><b>HaluEval / Hallucination Survey</b>（Ji et al., 2023）；<b>实体级 P/R</b>（信息抽取评估）；<b>软件版本兼容性</b>理论。</td>
+              <td class="theory"><b>RAGAS</b> Context Recall &amp; Answer Relevance（Es et al., 2023）；<b>集合覆盖率</b>；<b>Webb DOK</b> 深度加权。</td>
+              <td class="theory"><b>FEVER</b>（Thorne et al., 2018）；<b>RAGAS Faithfulness</b>；<b>ISO/IEC 25010</b> 功能正确性。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 输出层 -->
+    <section class="layer-block">
+      <div class="layer-head">
+        <span class="layer-badge output">输出层 · 25%</span>
+        <h2>Output · 可用性差异：大模型「用户能不能直接用」</h2>
+        <span>主因变量：可运行率、栈合规｜用户感知补充</span>
+      </div>
+      <div class="table-wrap">
+        <table class="metric-table output">
+          <thead>
+            <tr>
+              <th></th>
+              <th>认知友好度<span class="w-tag w-m">中</span><span class="col-w">层内 15%</span></th>
+              <th>解释粒度匹配<span class="w-tag w-m">中</span><span class="col-w">层内 15%</span></th>
+              <th>代码风格合规<span class="w-tag w-m">中</span><span class="col-w">层内 15%</span></th>
+              <th>代码简洁性<span class="key-col-badge">重点</span><span class="w-tag w-h">高*</span><span class="col-w">层内 20%</span></th>
+              <th>可执行性与完整性<span class="key-col-badge">重点</span><span class="w-tag w-h">高</span><span class="col-w">层内 30%</span></th>
+              <th>快速给答<span class="key-col-badge">重点</span><span class="w-tag w-h">高</span><span class="col-w">层内 15%</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>定义</th>
+              <td>新手在<strong>该栈语境</strong>下理解成本；CANN 额外概念（驱动/CANN/torch_npu 三角）是否被解释。</td>
+              <td>解释深度是否匹配页面二 persona；<strong>同问题</strong>下 CUDA/CANN 回答结构是否对称（先结论后步骤）。</td>
+              <td>代码是否用对<strong>栈 API</strong>（<code>.cuda()</code> vs <code>.npu()</code>、import torch_npu），非复制粘贴 CUDA 代码。</td>
+              <td>同功能下代码是否<strong>足够短、足够简单</strong>：LoC、圈复杂度、无冗余 wrapper。</td>
+              <td>脚本/命令能否少改即跑；是否闭环到<strong>环节产出</strong>；CANN 是否缺 build/验证步。</td>
+              <td>多快给出<strong>可停止的决策结论</strong>（TTFD）；首响（TTFR）与全文冗余（RedRate，信息等价时）。</td>
+            </tr>
+            <tr>
+              <th>核心<br>指标</th>
+              <td>
+                <ul>
+                  <li><code>NASA-TLX</code> 认知负荷（6 维）</li>
+                  <li><code>Extraneous Load Index</code></li>
+                  <li><code>Jargon Density</code> (JD)</li>
+                </ul>
+                <span class="formula">ELI = mental + effort − performance</span>
+              </td>
+              <td>
+                <ul>
+                  <li><code>Persona-Granularity Score</code> (PGS)</li>
+                  <li><code>Structural Symmetry</code> (SYM)</li>
+                  <li><code>ROUGE-L</code> vs 参考大纲</li>
+                </ul>
+                <span class="formula">SYM ∈ [0,1] outline parity</span>
+              </td>
+              <td>
+                <ul>
+                  <li><code>Stack Leakage Index</code> (SLI)</li>
+                  <li><code>Device Consistency Rate</code> (DCR)</li>
+                  <li><code>Static Analysis Pass Rate</code></li>
+                </ul>
+                <span class="formula">SLI = cuda_only_tokens / code_tokens</span>
+              </td>
+              <td>
+                <ul>
+                  <li><code class="core-metric" data-tip="Code Snippet Conciseness = 参考最简实现 LoC / 回答代码 LoC。同功能下比值 ≥1 表示足够简洁，环节 5–6 必评。">CSC</code> Code Conciseness <em style="font-size:.65rem;color:var(--muted)">必报*</em></li>
+                  <li><code>LoC</code> / 等价 LoC 比</li>
+                  <li><code>McCabe CC</code> 圈复杂度</li>
+                  <li><code>Token Efficiency</code></li>
+                </ul>
+                <span class="formula">CSC = LoC<sub>ref</sub>/LoC<sub>ans</sub><br>*环节 5–6 必评；无代码则 N/A</span>
+              </td>
+              <td>
+                <ul>
+                  <li><code class="core-metric" data-tip="代码块复制到 sandbox 一次试跑的成功率（HumanEval 范式）。衡量输出能否少改即跑，含代码环节建议必报。">pass@1</code> <em style="font-size:.65rem;color:var(--muted)">必报*</em></li>
+                  <li><code>WCR</code> Workflow Completion</li>
+                  <li><code>SCR</code> Step Coverage</li>
+                </ul>
+                <span class="formula">pass@1 = #run_ok / #blocks</span>
+              </td>
+              <td>
+                <ul>
+                  <li><code class="core-metric" data-tip="Time-to-First-Decision = 决策句首次出现的 token 位置 / 全文 token 数。越小表示越早给出「自研/组合/等」结论，≤0.25 为优。">TTFD</code> Time-to-First-Decision <em style="font-size:.65rem;color:var(--muted)">必报</em></li>
+                  <li><code>TTFR</code> 首 token 延迟</li>
+                  <li><code>RedRate</code>（信息等价时）</li>
+                </ul>
+                <span class="formula">TTFD ≤ 0.25 为优（前 25% 给决策）</span>
+              </td>
+            </tr>
+            <tr class="compare-row">
+              <th>对照<br>Δ 指标</th>
+              <td><code>ΔTLX</code>、<code>ΔJD</code>：CANN 概念断层是否提高负荷。</td>
+              <td><code>ΔSYM</code>、<code>ΔPGS</code>：配对结构是否同构可比。</td>
+              <td><code>ΔSLI</code>、<code>ΔDCR</code></td>
+              <td><code class="core-metric" data-tip="配对差值：代码简洁性 CANN−CUDA。负值表示 CANN 生成代码更冗长。">ΔCSC</code> 必报*；<code>ΔCC</code> 可选。</td>
+              <td><code class="core-metric" data-tip="配对差值：一次试跑通过率 CANN−CUDA。负值表示 CANN 侧代码更难直接运行。">Δpass@1</code> 必报*；<code>ΔWCR</code>、<code>ΔSCR</code> 可选。</td>
+              <td><code class="core-metric" data-tip="配对差值：决策前置程度 CANN−CUDA。正值表示 CANN 更晚才给出可停止结论。">ΔTTFD</code> 必报；<code>ΔTTFR</code> 可选。</td>
+            </tr>
+            <tr>
+              <th>度量<br>协议</th>
+              <td>目标用户（新手）完成 NASA-TLX；标注 CANN-only 术语是否解释。</td>
+              <td>预写参考大纲（按 persona）；双盲评 SYM；PGS 用 Likert rubric。</td>
+              <td>代码块 AST/regex；栈白名单 token；ruff/clang-tidy 可选。</td>
+              <td>McCabe CC；与 LoC<sub>ref</sub>（专家最简实现）比 CSC。</td>
+              <td>sandbox 试跑；SCR 对 workflow 模板。</td>
+              <td>标注 decision 句首位置；记录 TTFR（API 延迟或首段输出时间）。</td>
+            </tr>
+            <tr>
+              <th>阈值<br>参考</th>
+              <td>TLX≤50（100 量表）为可接受；JD≤0.05。</td>
+              <td>SYM≥0.8 方可做公平 Δ 比较；PGS≥4/5。</td>
+              <td>SLI≤0.05；DCR=1.0 为优（CANN 侧 .cuda() 即违规）。</td>
+              <td>CSC≥1.0 且 CC≤10 为优；冗长但不简洁 ↓ 分。</td>
+              <td>pass@1≥0.8；WCR=1.0。</td>
+              <td>TTFD≤0.25；TTFR 按场景 baseline 比。</td>
+            </tr>
+            <tr>
+              <th>理论<br>依据</th>
+              <td class="theory"><b>认知负荷理论</b>（Sweller, 1988）；<b>NASA-TLX</b>（Hart &amp; Staveland, 1988）工作负荷标准量表。</td>
+              <td class="theory"><b>最近发展区</b>（Vygotsky）；<b>文本相似度</b>（ROUGE/BLEU, Lin 2004）用于结构对齐；<b>Grice 方式准则</b>。</td>
+              <td class="theory"><b>Norman 概念模型</b>；<b>软件惯例一致性</b>；API 设计 usability（Nielsen heuristics）。</td>
+              <td class="theory"><b>McCabe</b>（1976）圈复杂度 CC；Clean Code；ISO 25010 可维护性。</td>
+              <td class="theory"><b>HumanEval</b> pass@k（Chen et al., 2021）；<b>JTBD</b> 任务完成。</td>
+              <td class="theory"><b>HCI 响应时间</b>（Miller, 1968）；<b>Grice 量准则</b>；对话 latency 评估。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="refs">
+      <h3>主要理论参考文献</h3>
+      <ol>
+        <li>Manning, C. D., Raghavan, P., & Schütze, H. (2008). <em>Introduction to Information Retrieval</em>. Cambridge — Recall@k, MRR, nDCG.</li>
+        <li>Järvelin, K., & Kekäläinen, J. (2002). Cumulated gain-based evaluation of IR techniques. <em>ACM TOIS</em> — nDCG.</li>
+        <li>Es, S. et al. (2023). RAGAS: Automated Evaluation of Retrieval Augmented Generation — Faithfulness, Context Recall/Precision.</li>
+        <li>Thorne, J. et al. (2018). FEVER: Fact Extraction and VERification — Label Accuracy.</li>
+        <li>Ji, Z. et al. (2023). Survey of Hallucination in NLG. <em>ACM Computing Surveys</em>.</li>
+        <li>Yao, S. et al. (2022). ReAct; Qin, Y. et al. (2023). ToolLLM / ToolBench — tool evaluation.</li>
+        <li>Young, S. et al. (2013). POMDP dialogue systems; Mehri, S. et al. (2019). USR — dialogue quality.</li>
+        <li>Chen, M. et al. (2021). Evaluating Large Language Models Trained on Code — pass@k.</li>
+        <li>Sweller, J. (1988). Cognitive load; Hart, S. G., & Staveland, L. E. (1988). NASA-TLX.</li>
+        <li>Pirolli, P., & Card, S. (1999). Information foraging. <em>Psychological Review</em>.</li>
+        <li>McCabe, T. J. (1976). A complexity measure. <em>IEEE TSE</em> — 圈复杂度 CC；代码简洁性。</li>
+        <li>Miller, R. B. (1968). Response time in man-computer conversational transactions — TTFR/TTC。</li>
+      </ol>
+    </div>
+  </div>
+
+  <footer>页面三 · 大模型回答质量度量框架 · CUDA vs CANN 研究</footer>
+  <div id="metric-tip" class="metric-tip" hidden role="tooltip"></div>
+  <script>
+    (function () {
+      var tip = document.getElementById('metric-tip');
+      var active = null;
+
+      function place(el) {
+        var r = el.getBoundingClientRect();
+        tip.style.left = '0';
+        tip.style.top = '0';
+        var left = r.left + r.width / 2 - tip.offsetWidth / 2;
+        left = Math.max(8, Math.min(left, window.innerWidth - tip.offsetWidth - 8));
+        var top = r.top - tip.offsetHeight - 8;
+        if (top < 8) top = r.bottom + 8;
+        tip.style.left = left + 'px';
+        tip.style.top = top + 'px';
+      }
+
+      function show(el) {
+        var text = el.getAttribute('data-tip');
+        if (!text) return;
+        active = el;
+        tip.textContent = text;
+        tip.hidden = false;
+        place(el);
+      }
+
+      function hide() {
+        active = null;
+        tip.hidden = true;
+      }
+
+      document.querySelectorAll('[data-tip]').forEach(function (el) {
+        if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
+        el.addEventListener('mouseenter', function () { show(el); });
+        el.addEventListener('mouseleave', hide);
+        el.addEventListener('focus', function () { show(el); });
+        el.addEventListener('blur', hide);
+      });
+
+      window.addEventListener('scroll', function () {
+        if (active) place(active);
+      }, true);
+      window.addEventListener('resize', function () {
+        if (active) place(active);
+      });
+    })();
+  </script>
+</body>
+</html>

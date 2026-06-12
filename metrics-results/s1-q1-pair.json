@@ -1,0 +1,227 @@
+{
+  "pair_id": "s1-q1",
+  "scene": "环节 1 · 查官方文档",
+  "cuda_id": "cuda-s1-q1",
+  "cann_id": "cann-s1-q1",
+  "cuda_prompt": "帮我在 PyTorch 官方文档里查 vector add 有没有原生算子，并给出对应文档链接。",
+  "cann_prompt": "帮我在 torch_npu 支持清单里查目标算子是否支持，并注明版本要求。",
+  "scored_at": "2026-06-12T03:35:00.251219Z",
+  "metrics": [
+    {
+      "metric": "Recall@k",
+      "module": "检索深度与精准度",
+      "layer": "执行层",
+      "layer_key": "exec",
+      "cuda": {
+        "value": 1.0,
+        "detail": "Top-5 检索中 4 页命中 Gold 域（池 3）",
+        "auto": "semi",
+        "module": "检索深度与精准度",
+        "layer": "执行层"
+      },
+      "cann": {
+        "value": 1.0,
+        "detail": "Top-5 检索中 2 页命中 Gold 域（池 2）",
+        "auto": "semi",
+        "module": "检索深度与精准度",
+        "layer": "执行层"
+      },
+      "delta": 0.0
+    },
+    {
+      "metric": "MRR",
+      "module": "检索深度与精准度",
+      "layer": "执行层",
+      "layer_key": "exec",
+      "cuda": {
+        "value": 1.0,
+        "detail": "首个相关检索为第 1 次 search",
+        "auto": "semi",
+        "module": "检索深度与精准度",
+        "layer": "执行层"
+      },
+      "cann": {
+        "value": 0.5,
+        "detail": "首个相关检索为第 2 次 search",
+        "auto": "semi",
+        "module": "检索深度与精准度",
+        "layer": "执行层"
+      },
+      "delta": -0.5
+    },
+    {
+      "metric": "NPL",
+      "module": "路径效率",
+      "layer": "执行层",
+      "layer_key": "exec",
+      "cuda": {
+        "value": 2.0,
+        "detail": "STS=8，baseline=4",
+        "auto": "semi",
+        "module": "路径效率",
+        "layer": "执行层"
+      },
+      "cann": {
+        "value": 1.5,
+        "detail": "STS=6，baseline=4",
+        "auto": "semi",
+        "module": "路径效率",
+        "layer": "执行层"
+      },
+      "delta": -0.5
+    },
+    {
+      "metric": "TTC",
+      "module": "多轮收敛",
+      "layer": "执行层",
+      "layer_key": "exec",
+      "cuda": {
+        "value": 19.86,
+        "detail": "19.9s（started→reply）",
+        "auto": "semi",
+        "unit": "s",
+        "module": "多轮收敛",
+        "layer": "执行层"
+      },
+      "cann": {
+        "value": 2.42,
+        "detail": "2.4s（started→reply）",
+        "auto": "semi",
+        "unit": "s",
+        "module": "多轮收敛",
+        "layer": "执行层"
+      },
+      "delta": -17.44
+    },
+    {
+      "metric": "OSR",
+      "module": "官方信息占比",
+      "layer": "内容层",
+      "layer_key": "content",
+      "cuda": {
+        "value": 1.0,
+        "detail": "4/4 URL 为栈官方域",
+        "auto": "full",
+        "module": "官方信息占比",
+        "layer": "内容层"
+      },
+      "cann": {
+        "value": 0.667,
+        "detail": "2/3 URL 为栈官方域",
+        "auto": "full",
+        "module": "官方信息占比",
+        "layer": "内容层"
+      },
+      "delta": -0.333
+    },
+    {
+      "metric": "HalRate",
+      "module": "信息时效性与 API 幻觉",
+      "layer": "内容层",
+      "layer_key": "content",
+      "cuda": {
+        "value": 0.0,
+        "detail": "引用 Claude 非事实源（不计致命）",
+        "auto": "manual",
+        "module": "信息时效性与 API 幻觉",
+        "layer": "内容层"
+      },
+      "cann": {
+        "value": 0.111,
+        "detail": "「通常已映射」缺逐条清单引用",
+        "auto": "manual",
+        "module": "信息时效性与 API 幻觉",
+        "layer": "内容层"
+      },
+      "delta": 0.111
+    },
+    {
+      "metric": "Cov@checklist",
+      "module": "知识覆盖率",
+      "layer": "内容层",
+      "layer_key": "content",
+      "cuda": {
+        "value": 1.0,
+        "detail": "命中 5/5",
+        "auto": "semi",
+        "module": "知识覆盖率",
+        "layer": "内容层"
+      },
+      "cann": {
+        "value": 1.0,
+        "detail": "命中 5/5",
+        "auto": "semi",
+        "module": "知识覆盖率",
+        "layer": "内容层"
+      },
+      "delta": 0.0
+    },
+    {
+      "metric": "pass@1",
+      "module": "可执行性与完整性",
+      "layer": "输出层",
+      "layer_key": "output",
+      "cuda": {
+        "value": null,
+        "detail": "环节 1 无代码块 · N/A",
+        "auto": "full",
+        "na": true,
+        "module": "可执行性与完整性",
+        "layer": "输出层"
+      },
+      "cann": {
+        "value": null,
+        "detail": "环节 1 无代码块 · N/A",
+        "auto": "full",
+        "na": true,
+        "module": "可执行性与完整性",
+        "layer": "输出层"
+      },
+      "delta": null
+    },
+    {
+      "metric": "TTFD",
+      "module": "快速给答",
+      "layer": "输出层",
+      "layer_key": "output",
+      "cuda": {
+        "value": 0.735,
+        "detail": "决策句约在 reply 前 73% 位置（字符近似）",
+        "auto": "semi",
+        "module": "快速给答",
+        "layer": "输出层"
+      },
+      "cann": {
+        "value": 0.819,
+        "detail": "决策句约在 reply 前 81% 位置（字符近似）",
+        "auto": "semi",
+        "module": "快速给答",
+        "layer": "输出层"
+      },
+      "delta": 0.084
+    },
+    {
+      "metric": "CSC",
+      "module": "代码简洁性",
+      "layer": "输出层",
+      "layer_key": "output",
+      "cuda": {
+        "value": null,
+        "detail": "环节 1 无代码 · N/A",
+        "auto": "full",
+        "na": true,
+        "module": "代码简洁性",
+        "layer": "输出层"
+      },
+      "cann": {
+        "value": null,
+        "detail": "环节 1 无代码 · N/A",
+        "auto": "full",
+        "na": true,
+        "module": "代码简洁性",
+        "layer": "输出层"
+      },
+      "delta": null
+    }
+  ]
+}

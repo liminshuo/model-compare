@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>新手入门级算子开发 · 完整 Workflow 链路</title>
+  <style>
+    :root {
+      --cuda: #76b900; --cuda-bg: #f4f9e8;
+      --cann: #e60012; --cann-bg: #fff0f1;
+      --bg: #f8f9fc; --card: #fff; --text: #1a1d26;
+      --muted: #5c6370; --border: #e2e6ef;
+      --accent: #3b5bdb; --accent-light: #edf2ff;
+      --shadow: 0 4px 24px rgba(26,29,38,.08);
+      --radius: 12px;
+      --p1: #1e40af; --p2: #2563eb; --p3: #7c3aed;
+      --p4: #d97706; --p5: #059669; --p6: #0d9488;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg); color: var(--text); line-height: 1.6;
+    }
+    header {
+      background: linear-gradient(135deg, #1a1d26 0%, #2d3561 100%);
+      color: #fff; padding: 2rem;
+    }
+    header h1 { font-size: 1.6rem; margin-bottom: .4rem; }
+    header p { opacity: .85; font-size: .92rem; max-width: 880px; }
+    .pagenav {
+      display: flex; gap: .5rem; flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+    .pagenav a {
+      color: #fff; text-decoration: none; font-size: .82rem;
+      padding: .35rem .85rem; border-radius: 6px;
+      border: 1px solid rgba(255,255,255,.35);
+    }
+    .pagenav a:hover { background: rgba(255,255,255,.12); }
+    .pagenav a.cur { background: #fff; color: #2d3561; border-color: #fff; font-weight: 600; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+    .phase-block { margin-bottom: 2rem; }
+    .phase-title {
+      display: flex; align-items: center; gap: .65rem;
+      margin-bottom: 1rem; padding-bottom: .5rem;
+      border-bottom: 2px solid var(--border);
+    }
+    .phase-badge {
+      font-size: .72rem; font-weight: 800; color: #fff;
+      padding: .25rem .65rem; border-radius: 6px; letter-spacing: .04em;
+    }
+    .phase-badge.p1 { background: var(--p1); }
+    .phase-badge.p2 { background: var(--p2); }
+    .phase-badge.p3 { background: var(--p3); }
+    .phase-badge.p4 { background: var(--p4); }
+    .phase-badge.p5 { background: var(--p5); }
+    .phase-badge.p6 { background: var(--p6); }
+    .phase-title h2 { font-size: 1.15rem; }
+    .phase-title span { font-size: .85rem; color: var(--muted); }
+    .step-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); box-shadow: var(--shadow);
+      margin-bottom: 1rem; overflow: hidden;
+    }
+    .step-head {
+      display: flex; align-items: center; gap: .75rem;
+      padding: .75rem 1rem; background: #fafbfe;
+      border-bottom: 1px solid var(--border);
+    }
+    .step-num {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--accent); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .78rem; font-weight: 700; flex-shrink: 0;
+    }
+    .step-head h3 { font-size: .95rem; flex: 1; }
+    .step-outcome {
+      font-size: .72rem; color: var(--muted);
+      background: #f0f2f8; padding: .2rem .5rem; border-radius: 4px;
+    }
+    .step-body { padding: 1rem; }
+    .step-desc {
+      font-size: .85rem; color: var(--muted);
+      margin-bottom: .85rem; padding: .5rem .65rem;
+      background: #fafbfe; border-radius: 6px;
+    }
+    .compare { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+    @media (max-width: 720px) { .compare { grid-template-columns: 1fr; } }
+    .col { border-radius: 8px; padding: .75rem; font-size: .82rem; }
+    .col.cuda { background: var(--cuda-bg); border: 1px solid #d4e8a8; }
+    .col.cann { background: var(--cann-bg); border: 1px solid #f5c2c7; }
+    .col-label {
+      font-size: .7rem; font-weight: 800; letter-spacing: .05em;
+      margin-bottom: .5rem; display: block;
+    }
+    .col.cuda .col-label { color: #4a7a00; }
+    .col.cann .col-label { color: #b8000e; }
+    .col ul { list-style: none; }
+    .col li {
+      padding: .35rem 0; border-bottom: 1px dashed rgba(0,0,0,.06);
+      line-height: 1.5;
+    }
+    .col li:last-child { border-bottom: none; }
+    .col li b { color: var(--text); font-size: .78rem; }
+    .col ul.sub {
+      margin: .35rem 0 0 .15rem; padding-left: 0;
+      list-style: none;
+    }
+    .col ul.sub li {
+      padding: .25rem 0;
+      border-bottom: none;
+      font-size: .76rem;
+      color: var(--muted);
+    }
+    .col ul.sub li b { font-size: .74rem; }
+    .scene-purpose {
+      display: block; margin: .2rem 0 .25rem .1rem;
+      font-size: .7rem; line-height: 1.45; color: #374151;
+    }
+    .scene-purpose .scene-goal,
+    .scene-purpose .scene-effect {
+      display: block;
+    }
+    .scene-purpose .scene-effect { margin-top: .12rem; }
+    .scene-purpose b { font-size: .68rem; color: var(--text); }
+    .col ul.sub-q {
+      margin: .2rem 0 .15rem .35rem; padding-left: 0;
+      list-style: none;
+    }
+    .col ul.sub-q li {
+      display: flex; align-items: flex-start; gap: .4rem;
+      padding: .2rem 0;
+      font-size: .71rem;
+      color: #4b5563;
+      line-height: 1.4;
+    }
+    .col ul.sub-q li .ai-text { font-style: italic; flex: 1; }
+    .ai-link.ai-text { display: inline; flex: 1; }
+    .ai-label {
+      display: block; margin: .25rem 0 .1rem .1rem;
+      font-size: .68rem; font-weight: 700; color: var(--text);
+    }
+    .ai-tag {
+      flex-shrink: 0;
+      font-size: .58rem; font-weight: 700; font-style: normal;
+      padding: .12rem .4rem; border-radius: 4px;
+      letter-spacing: .04em; line-height: 1.2;
+      margin-top: .05rem;
+    }
+    .tag-ask { background: #edf2ff; color: #3b5bdb; }
+    .tag-task { background: #ecfdf5; color: #047857; }
+    .col.cuda .tag-ask { background: #e8f5d0; color: #4a7a00; }
+    .col.cuda .tag-task { background: #d4e8a8; color: #3d6600; }
+    .col.cann .tag-ask { background: #ffe4e6; color: #b8000e; }
+    .col.cann .tag-task { background: #fecdd3; color: #9f1239; }
+    .col ul.sub-q code {
+      font-size: .68rem; font-style: normal;
+      background: rgba(0,0,0,.05); padding: .05rem .25rem; border-radius: 3px;
+    }
+    .ai-link {
+      color: inherit; text-decoration: none;
+      border-bottom: 1px dashed rgba(59,91,219,.45);
+      cursor: pointer; transition: color .15s, border-color .15s;
+    }
+    .ai-link:hover {
+      color: var(--accent); border-bottom-color: var(--accent);
+    }
+    .col.cuda .ai-link:hover { color: #4a7a00; border-bottom-color: #4a7a00; }
+    .col.cann .ai-link:hover { color: #b8000e; border-bottom-color: #b8000e; }
+    .ai-link::after {
+      content: " ↗"; font-size: .62rem; font-style: normal;
+      opacity: .55;
+    }
+    .llm-q {
+      margin-top: .5rem; padding: .45rem .55rem;
+      background: rgba(255,255,255,.75); border-radius: 5px;
+      font-size: .78rem; border-left: 3px solid var(--accent);
+    }
+    .col.cuda .llm-q { border-left-color: var(--cuda); }
+    .col.cann .llm-q { border-left-color: var(--cann); }
+    .llm-q::before { content: "💬 大模型："; font-weight: 600; font-size: .72rem; color: var(--muted); }
+    .flow-arrow {
+      text-align: center; color: var(--muted); font-size: 1.2rem;
+      margin: -.25rem 0 .5rem;
+    }
+    .summary-table {
+      width: 100%; border-collapse: collapse; font-size: .82rem;
+      background: var(--card); border-radius: var(--radius);
+      overflow: hidden; box-shadow: var(--shadow); margin-top: 2rem;
+    }
+    .summary-table th, .summary-table td {
+      border: 1px solid var(--border); padding: .55rem .65rem;
+      text-align: left; vertical-align: top;
+    }
+    .summary-table th { background: #edf2ff; font-size: .78rem; }
+    footer { text-align: center; padding: 2rem; color: var(--muted); font-size: .8rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container" style="padding:0;">
+      <h1>新手 · 入门级算子开发 Workflow</h1>
+      <p>任务：自定义算子开发（Hello World：vector add）｜用户：新手｜目标：从查资料到跑通第一个算子的完整链路，CUDA 与 CANN 平行对照。</p>
+      <nav class="pagenav">
+        <a href="cuda-cann-journey-map.html">← 页面一：旅程地图</a>
+        <a href="operator-novice-workflow.html" class="cur">页面二：算子开发 Workflow</a>
+        <a href="llm-metrics-framework.html">页面三：度量指标</a>
+        <a href="llm-metrics-results.html">页面四：度量结果 →</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- 阶段一 -->
+    <section class="phase-block">
+      <div class="phase-title">
+        <span class="phase-badge p1">阶段 1</span>
+        <h2>问题界定与前置确认</h2>
+        <span>环节 1、4｜要不要做 + 环境能不能做</span>
+      </div>
+      <p style="font-size:.82rem;color:var(--muted);margin:-.5rem 0 1rem .25rem;">依据：Ascend「算子分析」；PyTorch 自定义算子前置条件检查。</p>
+
+      <div class="step-card">
+        <div class="step-head"><span class="step-num">1</span><h3>判断是否需要自研算子</h3><span class="step-outcome">产出：自研 / 等框架 / 组合算子</span></div>
+        <div class="step-body">
+          <div class="step-desc">用户先确认：这个算子框架里有没有？没有的话要不要自己写？</div>
+          <p style="font-size:.78rem;margin-bottom:.65rem;"><a href="llm-metrics-results.html?pair=s1-q1" style="color:var(--accent);font-weight:600;">📊 首对「查官方文档」已完成 10 项指标跑分 → 页面四</a></p>
+          <div class="compare">
+            <div class="col cuda">
+              <span class="col-label">CUDA 路径</span>
+              <ul>
+                <li><b>查什么：</b>PyTorch 是否已有原生算子；cuDNN/Triton 是否覆盖</li>
+                <li><b>去哪查：</b>
+                  <ul class="sub">
+                    <li><b>1 · 查官方文档：</b>PyTorch Docs、cuDNN/cuBLAS 列表、Custom Op 教程
+                      <span class="scene-purpose">
+                        <span class="scene-goal"><b>目的：</b>拿官方权威信息核实有没有现成算子。</span>
+                        <span class="scene-effect"><b>效果：</b>得到可引用的支持结论，决定能否直接停在本环节（不走自研）。</span>
+                      </span>
+                      <span class="ai-label">问 AI / 让 AI 做：</span>
+                      <ul class="sub-q">
+                        <li><span class="ai-tag tag-ask">问</span><a class="ai-link ai-text" href="llm-simulation.html?id=cuda-s1-q1" target="_blank" rel="noopener">帮我在 PyTorch 官方文档里查 vector add 有没有原生算子，并给出对应文档链接。</a></li>
+                        <li><span class="ai-tag tag-ask">问</span><a class="ai-link ai-text" href="llm-simulation.html?id=cuda-s1-q2" target="_blank" rel="noopener">请对照 cuDNN/cuBLAS 算子列表，判断我这个算子有没有高效内置实现。</a></li>
+                        <li><span class="ai-tag tag-task">做</span><a class="ai-link ai-text" href="llm-simulation.html?id=cuda-s1-t1" target="_blank" rel="noopener">总结 Custom Op 教程要点：哪些情况才必须写 CUDA kernel？输出一张决策清单。</a></li>
+                      </ul>
+                    </li>
+                    <li><b>2 · 问 AI 助手：</b>是否必须自研、cuDNN 覆盖、能否组合内置算子
+                      <span class="scene-purpose">
+                        <span class="scene-goal"><b>目的：</b>用自然语言快速理清「自研 / 组合 / 等框架」三条路。</span>
+                        <span class="scene-effect"><b>效果：</b>降低读文档门槛，拿到可执行的排查顺序与决策建议。</span>
+                      </span>
+                      <span class="ai-label">问 AI / 让 AI 做：</span>
+                      <ul class="sub-q">
+                        <li><span class="ai-tag tag-ask">问</span><a class="ai-link ai-text" href="llm-simulation.html?id=cuda-s2-q1" target="_blank" rel="noopener">我是应用开发者，什么情况下必须自研 CUDA 算子？请给排查顺序。</a></li>
+                        <li><span class="ai-tag tag-ask">问</span><a class="ai-link ai-text" href="llm-simulation.html?id=cuda-s2-q2" target="_blank" rel="noopener">cuDNN 能覆盖时还有必要手写 kernel 吗？帮我对比利弊并给建议。</a></li>
+                        <li><span class="ai-tag tag-task">做</span><a class="ai-link ai-text" href="llm-simulation.html?id=cuda-s2-t1" target="_blank" rel="noopener">能否用几个 <code>torch</code> 内置算子组合实现？请给等价写法和判断依据。</a></li>
+                      </ul>
+                    </li>
+                    <li><b>3 · IDE 内 Agent：</b>选中代码问 cuDNN 路径、扫仓库、写对比脚本
+                      <span class="scene-purpose">
+                        <span class="scene-goal"><b>目的：</b>结合真实工程判断瓶颈，用运行证据验证猜测。</span>
+                        <span class="scene-effect"><b>效果：</b>确认慢的是否必须自研，或换内置/组合算子即可解决。</span>
+                      </span>
+                      <span class="ai-label">问 AI / 让 AI 做：</span>
+                      <ul class="sub-q">
+                        <li><span class="ai-tag tag-ask">问</span><a class="ai-link ai-text" href="llm-simulation.html?id=cuda-s3-q1" target="_blank" rel="noopener">分析我选中的 <code>forward</code>，慢在哪个 op？有没有走 cuDNN？</a></li>
+                        <li><span class="ai-tag tag-task">做</span><a class="ai-link ai-text" href="llm-simulation.html?id=cuda-s3-t1" target="_blank" rel="noopener">扫描当前仓库，列出可替换为 PyTorch 内置的自定义算子。</a></li>
+                        <li><span class="ai-tag tag-task">做</span><a class="ai-link ai-text" href="llm-simulation.html?id=cuda-s3-t2" target="_blank" rel="noopener">生成对比脚本：<code>torch.add</code> vs 我现在的实现，比对输出精度与耗时。</a></li>
+                      </ul>
+                    </li>
+                  </ul>
+                </li>
+              </ul>
+            </div>
+            <div class="col cann">
+              <span class="col-label">CANN 路径</span>
+              <ul>
+                <li><b>查什么：</b>torch_npu 是否已支持；CANN 内置算子是否覆盖</li>
+                <li><b>去哪查：</b>
+                  <ul class="sub">
+                    <li><b>1 · 查官方文档：</b>torch_npu 支持清单、CANN 算子库、兼容性列表
+                      <span class="scene-purpose">
+                        <span class="scene-goal"><b>目的：</b>核实目标算子在当前 CANN / torch_npu 版本下是否已支持。</span>
+                        <span class="scene-effect"><b>效果：</b>确认版本匹配与支持范围，避免在已支持场景误启动 Ascend C 自研。</span>
+                      </span>
+                      <span class="ai-label">问 AI / 让 AI 做：</span>
+                      <ul class="sub-q">
+                        <li><span class="ai-tag tag-ask">问</span><a class="ai-link ai-text" href="llm-simulation.html?id=cann-s1-q1" target="_blank" rel="noopener">帮我在 <code>torch_npu</code> 支持清单里查目标算子是否支持，并注明版本要求。</a></li>
+                        <li><span class="ai-tag tag-ask">问</span><a class="ai-link ai-text" href="llm-simulation.html?id=cann-s1-q2" target="_blank" rel="noopener">根据我的 CANN + <code>torch_npu</code> 版本，查兼容性列表并判断能否直接跑。</a></li>
+                        <li><span class="ai-tag tag-task">做</span><a class="ai-link ai-text" href="llm-simulation.html?id=cann-s1-t1" target="_blank" rel="noopener">在 CANN 内置算子库文档里找等价 vector add 实现，整理对照表。</a></li>
+                      </ul>
+                    </li>
+                    <li><b>2 · 问 AI 助手：</b>Ascend 是否支持、替代方案、迁移差异
+                      <span class="scene-purpose">
+                        <span class="scene-goal"><b>目的：</b>快速弄清 NPU 侧的替代路径与 CUDA→Ascend 差异。</span>
+                        <span class="scene-effect"><b>效果：</b>在「等框架 / 组合算子 / 自研」之间做初步决策，减少盲查文档时间。</span>
+                      </span>
+                      <span class="ai-label">问 AI / 让 AI 做：</span>
+                      <ul class="sub-q">
+                        <li><span class="ai-tag tag-ask">问</span><a class="ai-link ai-text" href="llm-simulation.html?id=cann-s2-q1" target="_blank" rel="noopener">如何查某 PyTorch 算子在 Ascend 上是否已支持？请给逐步排查流程。</a></li>
+                        <li><span class="ai-tag tag-ask">问</span><a class="ai-link ai-text" href="llm-simulation.html?id=cann-s2-q2" target="_blank" rel="noopener">不支持时，等框架 / 组合算子 / 自研 Ascend C 各适合什么场景？帮我选型。</a></li>
+                        <li><span class="ai-tag tag-task">做</span><a class="ai-link ai-text" href="llm-simulation.html?id=cann-s2-t1" target="_blank" rel="noopener">从 CUDA 迁到 Ascend，这个算子常见坑有哪些？输出检查清单。</a></li>
+                      </ul>
+                    </li>
+                    <li><b>3 · IDE 内 Agent：</b>查 NPU fallback、列 torch_npu 调用、NPU 探测脚本
+                      <span class="scene-purpose">
+                        <span class="scene-goal"><b>目的：</b>在真实工程与 NPU 运行环境中验证支持情况。</span>
+                        <span class="scene-effect"><b>效果：</b>用试跑结果和报错定位不支持的算子，判断必须自研还是改写法即可。</span>
+                      </span>
+                      <span class="ai-label">问 AI / 让 AI 做：</span>
+                      <ul class="sub-q">
+                        <li><span class="ai-tag tag-ask">问</span><a class="ai-link ai-text" href="llm-simulation.html?id=cann-s3-q1" target="_blank" rel="noopener">分析选中的 NPU 代码：是否走加速还是 fallback 到 CPU？标出可疑算子。</a></li>
+                        <li><span class="ai-tag tag-task">做</span><a class="ai-link ai-text" href="llm-simulation.html?id=cann-s3-t1" target="_blank" rel="noopener">扫描项目，列出所有 <code>torch_npu</code> 调用及可能不支持的算子。</a></li>
+                        <li><span class="ai-tag tag-task">做</span><a class="ai-link ai-text" href="llm-simulation.html?id=cann-s3-t2" target="_blank" rel="noopener">生成 NPU 探测脚本并试跑，整理支持情况与报错信息。</a></li>
+                      </ul>
+                    </li>
+                  </ul>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flow-arrow">↓</div>
+
+      <div class="step-card">
+        <div class="step-head"><span class="step-num">4</span><h3>确认算子开发环境与工具链</h3><span class="step-outcome">产出：环境 OK / 缺什么组件</span></div>
+        <div class="step-body">
+          <div class="step-desc">可行性门禁：确认本机具备写算子、编译算子、跑算子的全套工具（PyTorch / Ascend 官方均将此作为开发前置）。</div>
+          <div class="compare">
+            <div class="col cuda">
+              <span class="col-label">CUDA 路径</span>
+              <ul>
+                <li><b>查什么：</b>nvcc 版本、g++ 版本、PyTorch CUDA 版、GPU 架构 sm_XX</li>
+                <li><b>验证：</b>nvcc --version；python -c "import torch; print(torch.cuda.is_available())"</li>
+              </ul>
+              <div class="llm-q">写 CUDA 自定义算子需要装哪些？nvcc 和 PyTorch CUDA 版本怎么对应？</div>
+            </div>
+            <div class="col cann">
+              <span class="col-label">CANN 路径</span>
+              <ul>
+                <li><b>查什么：</b>CANN Toolkit、Ascend C 编译器、torch_npu、soc_version</li>
+                <li><b>验证：</b>source set_env.sh；npu-smi info；torch.npu.is_available()</li>
+              </ul>
+              <div class="llm-q">写 Ascend C 算子需要装 CANN 哪些包？soc_version 怎么查？</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 阶段二 -->
+    <section class="phase-block">
+      <div class="phase-title">
+        <span class="phase-badge p2">阶段 2</span>
+        <h2>信息获取</h2>
+        <span>环节 2、3｜从内外部渠道获取可执行知识</span>
+      </div>
+      <p style="font-size:.82rem;color:var(--muted);margin:-.5rem 0 1rem .25rem;">依据：信息觅食理论；官方文档 + 社区二手源（对应 opknow 热力图「官方可发现性 / 二手数量」维度）。</p>
+
+      <div class="step-card">
+        <div class="step-head"><span class="step-num">2</span><h3>检索官方文档与入门示例</h3><span class="step-outcome">产出：官方 Hello World 链接</span></div>
+        <div class="step-body">
+          <div class="step-desc">找到平台官方的算子开发入门文档和可抄示例。</div>
+          <div class="compare">
+            <div class="col cuda">
+              <span class="col-label">CUDA 路径</span>
+              <ul>
+                <li><b>查什么：</b>Custom C++ and CUDA Operators 教程；CUDA C Programming Guide</li>
+                <li><b>去哪查：</b>docs.nvidia.com、docs.pytorch.org/tutorials/advanced</li>
+              </ul>
+              <div class="llm-q">PyTorch 官方自定义 CUDA 算子入门文档在哪？vector add 有官方示例吗？</div>
+            </div>
+            <div class="col cann">
+              <span class="col-label">CANN 路径</span>
+              <ul>
+                <li><b>查什么：</b>Ascend C 算子开发指南；msOpGen 快速入门</li>
+                <li><b>去哪查：</b>hiascend.com 算子开发文档、Gitee 样例仓</li>
+              </ul>
+              <div class="llm-q">昇腾 Ascend C 算子 Hello World 官方文档和示例在哪？</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flow-arrow">↓</div>
+
+      <div class="step-card">
+        <div class="step-head"><span class="step-num">3</span><h3>检索社区教程与踩坑案例</h3><span class="step-outcome">产出：2–3 篇可参考博客/仓库</span></div>
+        <div class="step-body">
+          <div class="step-desc">官方文档不够时，补社区手把手教程和常见报错解法。</div>
+          <div class="compare">
+            <div class="col cuda">
+              <span class="col-label">CUDA 路径</span>
+              <ul>
+                <li><b>查什么：</b>CSDN/知乎/GitHub 上的 CUDA Extension 踩坑；nvcc 报错案例</li>
+                <li><b>去哪查：</b>GitHub、Stack Overflow、NVIDIA 论坛</li>
+              </ul>
+              <div class="llm-q">PyTorch CUDAExtension 编译失败常见原因？社区里有没有完整踩坑记录？</div>
+            </div>
+            <div class="col cann">
+              <span class="col-label">CANN 路径</span>
+              <ul>
+                <li><b>查什么：</b>Ascend C 入门系列；msOpGen 编译报错案例</li>
+                <li><b>去哪查：</b>昇腾社区、CSDN、博客园</li>
+              </ul>
+              <div class="llm-q">Ascend C 算子开发社区教程推荐？msOpGen 报错怎么搜？</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 阶段三 -->
+    <section class="phase-block">
+      <div class="phase-title">
+        <span class="phase-badge p3">阶段 3</span>
+        <h2>认知建构</h2>
+        <span>环节 5、6、7｜建立心智模型，能读懂示例代码</span>
+      </div>
+      <p style="font-size:.82rem;color:var(--muted);margin:-.5rem 0 1rem .25rem;">依据：认知负荷理论（Sweller）— 新手须先理解并行模型与工具链，再动手编码，否则报错不可解释。</p>
+
+      <div class="step-card">
+        <div class="step-head"><span class="step-num">5</span><h3>理解并行编程模型</h3><span class="step-outcome">产出：能解释 grid/block 或 Vector 核</span></div>
+        <div class="step-body">
+          <div class="compare">
+            <div class="col cuda">
+              <span class="col-label">CUDA 路径</span>
+              <ul>
+                <li><b>学什么：</b>thread、block、grid、warp；threadIdx / blockIdx</li>
+                <li><b>为何学：</b>写 kernel 要知道怎么把数据分给线程</li>
+              </ul>
+              <div class="llm-q">CUDA grid/block/thread 概念？vector add 怎么映射线程？</div>
+            </div>
+            <div class="col cann">
+              <span class="col-label">CANN 路径</span>
+              <ul>
+                <li><b>学什么：</b>Vector 核、Cube 核；UB/GM 内存层级；SPMD 模型</li>
+                <li><b>为何学：</b>Ascend C 编程模型与 CUDA 不同，不能照搬</li>
+              </ul>
+              <div class="llm-q">Ascend C Vector 核和 CUDA thread 怎么类比？UB/GM 是什么？</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flow-arrow">↓</div>
+
+      <div class="step-card">
+        <div class="step-head"><span class="step-num">6</span><h3>理解算子开发工具链全貌</h3><span class="step-outcome">产出：能画出「从源码到被框架调用」流程图</span></div>
+        <div class="step-body">
+          <div class="compare">
+            <div class="col cuda">
+              <span class="col-label">CUDA 路径</span>
+              <ul>
+                <li><b>学什么：</b>.cu 源码 → nvcc 编译 → .so → PyTorch C++ Extension → Python 调用</li>
+                <li><b>关键文件：</b>kernel.cu、cpp 绑定、setup.py</li>
+              </ul>
+              <div class="llm-q">CUDA 自定义算子从写到被 PyTorch 调用，完整链路是什么？</div>
+            </div>
+            <div class="col cann">
+              <span class="col-label">CANN 路径</span>
+              <ul>
+                <li><b>学什么：</b>Ascend C 源码 → 算子编译 → 算子包 → msOpGen/框架插件 → Python 调用</li>
+                <li><b>关键文件：</b>算子 .cpp、json 原型、CMakeLists、插件注册</li>
+              </ul>
+              <div class="llm-q">Ascend C 算子从写到被 torch_npu 调用，完整链路是什么？</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flow-arrow">↓</div>
+
+      <div class="step-card">
+        <div class="step-head"><span class="step-num">7</span><h3>研读 Hello World 参考实现</h3><span class="step-outcome">产出：能逐行解释示例在做什么</span></div>
+        <div class="step-body">
+          <div class="compare">
+            <div class="col cuda">
+              <span class="col-label">CUDA 路径</span>
+              <ul>
+                <li><b>学什么：</b>vector add kernel 代码；PyTorch binding；setup.py 结构</li>
+                <li><b>动作：</b>对照官方示例，标出「改哪几处能换成自己的逻辑」</li>
+              </ul>
+              <div class="llm-q">逐行解释 PyTorch CUDA vector add 官方示例，哪些是必须改的？</div>
+            </div>
+            <div class="col cann">
+              <span class="col-label">CANN 路径</span>
+              <ul>
+                <li><b>学什么：</b>Ascend C vector add；算子原型 json；编译部署命令</li>
+                <li><b>动作：</b>对照官方 AddCustom 样例，标出关键步骤</li>
+              </ul>
+              <div class="llm-q">逐行解释 Ascend C vector add 官方示例，哪些是必须改的？</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 阶段四 -->
+    <section class="phase-block">
+      <div class="phase-title">
+        <span class="phase-badge p4">阶段 4</span>
+        <h2>方案设计</h2>
+        <span>环节 8、9｜技术路线与接入/验收方案</span>
+      </div>
+      <p style="font-size:.82rem;color:var(--muted);margin:-.5rem 0 1rem .25rem;">依据：Ascend C 官方「算子设计」（原型定义、Tiling）；Double Diamond Define 阶段；设计门禁后再编码。</p>
+
+      <div class="step-card">
+        <div class="step-head"><span class="step-num">8</span><h3>选择算子开发技术路线</h3><span class="step-outcome">产出：确定用哪条技术栈</span></div>
+        <div class="step-body">
+          <div class="compare">
+            <div class="col cuda">
+              <span class="col-label">CUDA 路径</span>
+              <ul>
+                <li><b>选项：</b>手写 CUDA C++ / Triton / 仅 PyTorch C++ Extension 调 cu 库</li>
+                <li><b>新手推荐：</b>PyTorch C++ Extension + 手写 CUDA kernel（资料最多）</li>
+              </ul>
+              <div class="llm-q">新手写 GPU 算子：直接 CUDA、Triton 还是 Extension？怎么选？</div>
+            </div>
+            <div class="col cann">
+              <span class="col-label">CANN 路径</span>
+              <ul>
+                <li><b>选项：</b>Ascend C / TBE / ACL 单算子 / 组合内置算子</li>
+                <li><b>新手推荐：</b>Ascend C + msOpGen（官方主推路线）</li>
+              </ul>
+              <div class="llm-q">新手写 NPU 算子：Ascend C、TBE、ACL 单算子怎么选？</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flow-arrow">↓</div>
+
+      <div class="step-card">
+        <div class="step-head"><span class="step-num">9</span><h3>确定框架接入与验证方案</h3><span class="step-outcome">产出：接入方式 + 验证标准</span></div>
+        <div class="step-body">
+          <div class="compare">
+            <div class="col cuda">
+              <span class="col-label">CUDA 路径</span>
+              <ul>
+                <li><b>决策：</b>注册到 autograd 还是仅前向；先在 Python 脚本测还是单元测试</li>
+                <li><b>验证标准：</b>与 torch.add 输出对比，误差 &lt; 1e-5</li>
+              </ul>
+              <div class="llm-q">入门级 CUDA 算子先只做前向可以吗？怎么和 torch 原生对比验证？</div>
+            </div>
+            <div class="col cann">
+              <span class="col-label">CANN 路径</span>
+              <ul>
+                <li><b>决策：</b>先 ACL 单算子跑通还是直接接 torch_npu；精度对比用 CPU 还是 PyTorch</li>
+                <li><b>验证标准：</b>与 CPU golden 或 PyTorch 参考对比</li>
+              </ul>
+              <div class="llm-q">入门级 CANN 算子先 ACL 单测还是直接接 torch_npu？精度怎么验？</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 阶段五 -->
+    <section class="phase-block">
+      <div class="phase-title">
+        <span class="phase-badge p5">阶段 5</span>
+        <h2>实现与构建</h2>
+        <span>环节 10、11、12｜搭工程 → 写 kernel → 编译通过</span>
+      </div>
+      <p style="font-size:.82rem;color:var(--muted);margin:-.5rem 0 1rem .25rem;">依据：PyTorch Tutorial Step「实现 + Build」；Ascend C「算子实现 + 编译部署」。此阶段结束标志：<strong>产物可编译、尚未接入框架</strong>。</p>
+
+      <div class="step-card">
+        <div class="step-head"><span class="step-num">10</span><h3>搭建算子工程</h3><span class="step-outcome">产出：可编译的工程目录</span></div>
+        <div class="step-body">
+          <div class="compare">
+            <div class="col cuda">
+              <span class="col-label">CUDA 路径</span>
+              <ul>
+                <li><b>做什么：</b>创建 kernel.cu、binding.cpp、setup.py 目录结构</li>
+              </ul>
+              <div class="llm-q">PyTorch CUDAExtension 工程目录和 setup.py 模板？</div>
+            </div>
+            <div class="col cann">
+              <span class="col-label">CANN 路径</span>
+              <ul>
+                <li><b>做什么：</b>用 msOpGen 生成算子工程骨架；填算子原型 json</li>
+              </ul>
+              <div class="llm-q">msOpGen 生成 Ascend C 算子工程的命令和目录结构？</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flow-arrow">↓</div>
+
+      <div class="step-card">
+        <div class="step-head"><span class="step-num">11</span><h3>编写最简 kernel（vector add）</h3><span class="step-outcome">产出：kernel 源码</span></div>
+        <div class="step-body">
+          <div class="compare">
+            <div class="col cuda">
+              <span class="col-label">CUDA 路径</span>
+              <ul>
+                <li><b>做什么：</b>写 __global__ vector add；配置 grid/block 维度</li>
+              </ul>
+              <div class="llm-q">CUDA vector add kernel 完整代码？grid/block 怎么设？</div>
+            </div>
+            <div class="col cann">
+              <span class="col-label">CANN 路径</span>
+              <ul>
+                <li><b>做什么：</b>写 Ascend C vector add；配置 tiling 基础参数</li>
+              </ul>
+              <div class="llm-q">Ascend C vector add 算子完整代码？</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flow-arrow">↓</div>
+
+      <div class="step-card">
+        <div class="step-head"><span class="step-num">12</span><h3>编译构建算子</h3><span class="step-outcome">产出：编译成功的 .so / 算子包</span></div>
+        <div class="step-body">
+          <div class="compare">
+            <div class="col cuda">
+              <span class="col-label">CUDA 路径</span>
+              <ul>
+                <li><b>做什么：</b>python setup.py install 或 pip install -e .</li>
+                <li><b>常见卡点：</b>sm_XX 架构不匹配、g++ 版本、CUDA 路径</li>
+              </ul>
+              <div class="llm-q">nvcc 编译报错 sm_XX not defined 怎么修？</div>
+            </div>
+            <div class="col cann">
+              <span class="col-label">CANN 路径</span>
+              <ul>
+                <li><b>做什么：</b>执行算子编译脚本；安装算子包到 OPP 路径</li>
+                <li><b>常见卡点：</b>soc_version 填错、CANN 环境未 source</li>
+              </ul>
+              <div class="llm-q">Ascend C 算子编译失败怎么查日志？soc_version 怎么填？</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 阶段六 -->
+    <section class="phase-block">
+      <div class="phase-title">
+        <span class="phase-badge p6">阶段 6</span>
+        <h2>集成验证与调试</h2>
+        <span>环节 13、14、15｜注册 → 跑通 → 精度验收</span>
+      </div>
+      <p style="font-size:.82rem;color:var(--muted);margin:-.5rem 0 1rem .25rem;">依据：PyTorch「Register + Test」；Ascend「算子验证（UT/ST）+ 框架集成」。新手里程碑：<strong>首个算子在框架内可调用且精度达标</strong>。</p>
+
+      <div class="step-card">
+        <div class="step-head"><span class="step-num">13</span><h3>注册算子到框架</h3><span class="step-outcome">产出：Python 里能 import / 调用</span></div>
+        <div class="step-body">
+          <div class="compare">
+            <div class="col cuda">
+              <span class="col-label">CUDA 路径</span>
+              <ul>
+                <li><b>做什么：</b>TORCH_LIBRARY 或 pybind 注册；Python import 自定义模块</li>
+              </ul>
+              <div class="llm-q">PyTorch 自定义 CUDA 算子怎么注册到 Python？</div>
+            </div>
+            <div class="col cann">
+              <span class="col-label">CANN 路径</span>
+              <ul>
+                <li><b>做什么：</b>算子插件注册到 torch_npu；或 ACL 单算子调用接口</li>
+              </ul>
+              <div class="llm-q">自定义 CANN 算子怎么注册到 torch_npu？</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flow-arrow">↓</div>
+
+      <div class="step-card">
+        <div class="step-head"><span class="step-num">14</span><h3>编写测试脚本并运行</h3><span class="step-outcome">产出：算子在设备上执行成功</span></div>
+        <div class="step-body">
+          <div class="compare">
+            <div class="col cuda">
+              <span class="col-label">CUDA 路径</span>
+              <ul>
+                <li><b>做什么：</b>写 test.py：创建 GPU tensor → 调用自定义算子 → print 结果</li>
+              </ul>
+              <div class="llm-q">测试自定义 CUDA 算子的 Python 脚本怎么写？</div>
+            </div>
+            <div class="col cann">
+              <span class="col-label">CANN 路径</span>
+              <ul>
+                <li><b>做什么：</b>写 test.py：创建 NPU tensor → 调用自定义算子 → print 结果</li>
+              </ul>
+              <div class="llm-q">测试自定义 CANN 算子的 Python 脚本怎么写？</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flow-arrow">↓</div>
+
+      <div class="step-card">
+        <div class="step-head"><span class="step-num">15</span><h3>精度验证与问题调试</h3><span class="step-outcome">产出：算子验收通过 ✅</span></div>
+        <div class="step-body">
+          <div class="compare">
+            <div class="col cuda">
+              <span class="col-label">CUDA 路径</span>
+              <ul>
+                <li><b>做什么：</b>与 torch.add 对比；误差超阈值则查 kernel 逻辑 / 数据类型</li>
+                <li><b>调试：</b>CUDA_LAUNCH_BLOCKING=1；print 中间结果</li>
+              </ul>
+              <div class="llm-q">自定义 CUDA 算子输出和 torch 原生不一致怎么排查？</div>
+            </div>
+            <div class="col cann">
+              <span class="col-label">CANN 路径</span>
+              <ul>
+                <li><b>做什么：</b>与 CPU/PyTorch 参考对比；用 msaccucmp 验精度</li>
+                <li><b>调试：</b>查 plog；单算子 UT 日志</li>
+              </ul>
+              <div class="llm-q">自定义 CANN 算子精度不对怎么排查？msaccucmp 怎么用？</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 总览表 -->
+    <table class="summary-table">
+      <thead>
+        <tr>
+          <th>阶段</th><th>环节</th><th>用户目标</th><th>CUDA 关键动作</th><th>CANN 关键动作</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td rowspan="2"><b>1 问题界定与前置确认</b></td><td>1 判断自研</td><td>要不要自己写</td><td>查 cuDNN/PyTorch 覆盖</td><td>查 torch_npu 支持清单</td></tr>
+        <tr><td>4 环境确认</td><td>工具链齐全</td><td>nvcc + PyTorch CUDA</td><td>CANN + torch_npu</td></tr>
+        <tr><td rowspan="2"><b>2 信息获取</b></td><td>2 官方文档</td><td>找到 Hello World</td><td>PyTorch CUDA 算子教程</td><td>Ascend C 算子指南</td></tr>
+        <tr><td>3 社区案例</td><td>补充踩坑经验</td><td>GitHub / SO</td><td>昇腾社区 / CSDN</td></tr>
+        <tr><td rowspan="3"><b>3 认知建构</b></td><td>5 并行模型</td><td>看懂并行抽象</td><td>grid/block/thread</td><td>Vector/Cube/UB/GM</td></tr>
+        <tr><td>6 工具链全貌</td><td>知道完整链路</td><td>cu→nvcc→Extension</td><td>AscendC→编译→插件</td></tr>
+        <tr><td>7 研读示例</td><td>能解释示例代码</td><td>CUDA vector add 示例</td><td>AddCustom 示例</td></tr>
+        <tr><td rowspan="2"><b>4 方案设计</b></td><td>8 技术路线</td><td>选定开发方式</td><td>CUDA Extension</td><td>Ascend C + msOpGen</td></tr>
+        <tr><td>9 接入方案</td><td>定验证标准</td><td>对比 torch.add</td><td>对比 CPU golden</td></tr>
+        <tr><td rowspan="3"><b>5 实现与构建</b></td><td>10 搭工程</td><td>目录就绪</td><td>setup.py 工程</td><td>msOpGen 工程</td></tr>
+        <tr><td>11 写 kernel</td><td>vector add 源码</td><td>__global__ kernel</td><td>Ascend C kernel</td></tr>
+        <tr><td>12 编译</td><td>编译通过</td><td>nvcc / setup.py build</td><td>算子编译脚本</td></tr>
+        <tr><td rowspan="3"><b>6 集成验证与调试</b></td><td>13 注册</td><td>框架可调用</td><td>TORCH_LIBRARY</td><td>torch_npu 插件</td></tr>
+        <tr><td>14 运行</td><td>设备上跑通</td><td>GPU test.py</td><td>NPU test.py</td></tr>
+        <tr><td>15 验证</td><td>精度 OK ✅</td><td>对比 torch 原生</td><td>msaccucmp 验精度</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <footer>页面二 · 新手入门级算子开发 Workflow · <a href="cuda-cann-journey-map.html">返回旅程地图</a></footer>
+</body>
+</html>

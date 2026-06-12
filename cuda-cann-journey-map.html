@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CUDA vs CANN 开发者旅程地图 · 大模型辅助体验对比</title>
+  <style>
+    :root {
+      --cuda: #76b900;
+      --cuda-bg: #f4f9e8;
+      --cann: #e60012;
+      --cann-bg: #fff0f1;
+      --bg: #f8f9fc;
+      --card: #ffffff;
+      --text: #1a1d26;
+      --muted: #5c6370;
+      --border: #e2e6ef;
+      --accent: #3b5bdb;
+      --accent-light: #edf2ff;
+      --shadow: 0 4px 24px rgba(26,29,38,.08);
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    header {
+      background: linear-gradient(135deg, #1a1d26 0%, #2d3561 100%);
+      color: #fff;
+      padding: 2.5rem 2rem 2rem;
+    }
+    header h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: .5rem; }
+    header p { opacity: .85; max-width: 900px; font-size: .95rem; }
+    .container { max-width: 1280px; margin: 0 auto; padding: 1.5rem; }
+    .controls {
+      display: flex; flex-wrap: wrap; gap: 1.25rem;
+      background: var(--card); border-radius: var(--radius);
+      padding: 1.25rem 1.5rem; box-shadow: var(--shadow);
+      margin-bottom: 1.5rem; position: sticky; top: 0; z-index: 100;
+      border: 1px solid var(--border);
+    }
+    .control-group label {
+      display: block; font-size: .75rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .05em;
+      color: var(--muted); margin-bottom: .5rem;
+    }
+    .btn-group { display: flex; flex-wrap: wrap; gap: .5rem; }
+    .btn {
+      padding: .45rem 1rem; border-radius: 8px; border: 1.5px solid var(--border);
+      background: #fff; cursor: pointer; font-size: .875rem;
+      transition: all .15s; color: var(--text);
+    }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .legend {
+      display: flex; flex-wrap: wrap; gap: 1.5rem;
+      margin-bottom: 1.5rem; font-size: .85rem; color: var(--muted);
+    }
+    .legend span { display: flex; align-items: center; gap: .4rem; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot.cuda { background: var(--cuda); }
+    .dot.cann { background: var(--cann); }
+    .role-card {
+      background: var(--accent-light); border-radius: var(--radius);
+      padding: 1rem 1.25rem; margin-bottom: 1.5rem;
+      border-left: 4px solid var(--accent);
+    }
+    .role-card h2 { font-size: 1.1rem; margin-bottom: .25rem; }
+    .role-card p { font-size: .875rem; color: var(--muted); }
+    .controls-nested {
+      width: 100%; padding-top: .75rem; margin-top: .75rem;
+      border-top: 1px dashed var(--border);
+    }
+    .controls-nested .control-group { margin-bottom: 0; }
+    .journey-wrap {
+      background: var(--card); border-radius: var(--radius);
+      border: 1px solid var(--border); box-shadow: var(--shadow);
+      overflow: auto; margin-bottom: 1.5rem;
+    }
+    .journey-table {
+      border-collapse: collapse; width: 100%;
+      table-layout: fixed;
+    }
+    .journey-table th, .journey-table td {
+      border: 1px solid var(--border); vertical-align: top;
+    }
+    .journey-table .l1-col {
+      background: linear-gradient(180deg, #2d3561, #3b5bdb);
+      color: #fff; font-size: .88rem; font-weight: 700;
+      padding: .75rem .6rem; text-align: center;
+      vertical-align: middle;
+      width: 96px; min-width: 96px;
+      line-height: 1.4;
+      position: sticky; left: 0; z-index: 3;
+    }
+    .journey-table .l2-col {
+      background: #edf2ff; color: var(--text);
+      font-size: .78rem; font-weight: 600;
+      padding: .65rem .55rem; text-align: left;
+      vertical-align: middle;
+      width: 140px; min-width: 140px;
+      position: sticky; left: 96px; z-index: 2;
+      box-shadow: 2px 0 6px rgba(26,29,38,.06);
+    }
+    .journey-table .content-col { width: auto; }
+    .cell-body { padding: .5rem; min-height: 80px; background: #fff; cursor: pointer; }
+    .cell-body:hover { background: #fafbfe; }
+    .cell-body.active { outline: 2px solid var(--accent); outline-offset: -2px; background: #fafbfe; }
+    .pair-block {
+      border: 1px solid var(--border); border-radius: 8px;
+      margin-bottom: .45rem; overflow: hidden; background: #fafbfe;
+    }
+    .pair-block:last-child { margin-bottom: 0; }
+    .pair-head {
+      padding: .35rem .5rem; background: #fff;
+      border-bottom: 1px solid var(--border); font-size: .68rem;
+    }
+    .pair-head .pair-scene { font-weight: 600; color: var(--text); }
+    .pair-head .pair-goal { display: block; color: var(--muted); margin-top: .1rem; font-size: .62rem; }
+    .pair-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+    .pair-col { padding: .35rem .45rem; font-size: .68rem; line-height: 1.4; }
+    .pair-col.cuda { background: var(--cuda-bg); border-right: 1px solid var(--border); }
+    .pair-col.cann { background: var(--cann-bg); }
+    .pair-col-label {
+      font-size: .58rem; font-weight: 700; letter-spacing: .04em;
+      margin-bottom: .15rem; display: block;
+    }
+    .pair-col.cuda .pair-col-label { color: #4a7a00; }
+    .pair-col.cann .pair-col-label { color: #b8000e; }
+    .q-list { list-style: none; }
+    .q-list li {
+      font-size: .72rem; padding: .35rem .45rem;
+      background: rgba(255,255,255,.85); border-radius: 5px;
+      margin-bottom: .3rem; border-left: 2px solid transparent;
+      line-height: 1.45; cursor: default;
+    }
+    .detail-pair { margin-bottom: 1rem; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .detail-pair .pair-head { padding: .6rem .75rem; }
+    .detail-pair .pair-cols { font-size: .85rem; }
+    .detail-pair .pair-col { padding: .65rem .75rem; }
+    .cell-detail {
+      background: var(--card); border-radius: var(--radius);
+      border: 1px solid var(--border); box-shadow: var(--shadow);
+      padding: 1.25rem; margin-bottom: 1.5rem; display: none;
+    }
+    .cell-detail.visible { display: block; }
+    .cell-detail h3 { font-size: 1rem; margin-bottom: 1rem; }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width: 768px) { .detail-grid { grid-template-columns: 1fr; } }
+    .detail-col { padding: 1rem; border-radius: 8px; }
+    .detail-col.cuda { background: var(--cuda-bg); }
+    .detail-col.cann { background: var(--cann-bg); }
+    .detail-col h4 { font-size: .85rem; margin-bottom: .65rem; }
+    .detail-col .q-list li { font-size: .85rem; padding: .5rem .65rem; }
+    .insight-box {
+      background: var(--card); border-radius: var(--radius);
+      padding: 1.25rem; box-shadow: var(--shadow);
+      border: 1px solid var(--border); margin-top: 2rem;
+    }
+    .insight-box h3 { font-size: 1rem; margin-bottom: .75rem; }
+    .insight-box ul { padding-left: 1.25rem; font-size: .875rem; color: var(--muted); }
+    .insight-box li { margin-bottom: .4rem; }
+    footer {
+      text-align: center; padding: 2rem; color: var(--muted);
+      font-size: .8rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container" style="padding-top:0;padding-bottom:0;">
+      <h1>CUDA vs CANN 开发者全流程旅程地图</h1>
+      <p>面向产品设计与用户研究：L1/L2 任务结构对齐 <a href="https://schihhsin.github.io/opknow/17_official_site_focus.html" target="_blank" rel="noopener">opknow 26 任务热力矩阵</a>；每组提问为相同场景+相同目的的 CUDA/CANN 平行对比。</p>
+      <nav style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.85rem;">
+        <a href="cuda-cann-journey-map.html" style="color:#fff;text-decoration:none;font-size:.82rem;padding:.35rem .85rem;border-radius:6px;border:1px solid rgba(255,255,255,.35);background:#fff;color:#2d3561;font-weight:600;">页面一：旅程地图</a>
+        <a href="operator-novice-workflow.html" style="color:#fff;text-decoration:none;font-size:.82rem;padding:.35rem .85rem;border-radius:6px;border:1px solid rgba(255,255,255,.35);">页面二：算子 Workflow</a>
+        <a href="llm-metrics-framework.html" style="color:#fff;text-decoration:none;font-size:.82rem;padding:.35rem .85rem;border-radius:6px;border:1px solid rgba(255,255,255,.35);">页面三：度量指标</a>
+        <a href="llm-metrics-results.html" style="color:#fff;text-decoration:none;font-size:.82rem;padding:.35rem .85rem;border-radius:6px;border:1px solid rgba(255,255,255,.35);">页面四：度量结果 →</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="controls">
+      <div class="control-group" style="width:100%;">
+        <label>用户角色</label>
+        <div class="btn-group" id="roleBtns"></div>
+        <div class="controls-nested">
+          <div class="control-group">
+            <label id="levelLabel">用户经验 · 应用开发者</label>
+            <div class="btn-group" id="levelBtns"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <span><i class="dot cuda"></i> CUDA（NVIDIA 生态）</span>
+      <span><i class="dot cann"></i> CANN（华为 Ascend 生态）</span>
+      <span>左侧：7 个 L1 工作流阶段 · 26 个 L2 任务（对齐 opknow 热力矩阵）</span>
+      <span>每组提问：相同场景 + 相同目的，CUDA/CANN 平行对比</span>
+    </div>
+
+    <div class="role-card" id="roleDesc">
+      <h2>加载中…</h2>
+      <p>正在初始化旅程数据</p>
+    </div>
+    <div class="journey-wrap" id="journey"><p style="padding:2rem;text-align:center;color:var(--muted);">旅程表加载中…</p></div>
+    <div class="cell-detail" id="cellDetail"></div>
+    <div class="insight-box" id="insights"><p style="color:var(--muted);">洞察加载中…</p></div>
+  </div>
+
+  <footer>CUDA vs CANN 开发者旅程地图 · 大模型辅助体验研究框架</footer>
+
+  <script src="paired-questions-data.js"></script>
+  <script>
+    const ROLES = {
+      app: { name: "应用开发者", desc: "聚焦业务模型落地，以 PyTorch/TensorFlow 高层 API 为主，较少手写底层算子。" },
+      migrate: { name: "模型/框架迁移工程师", desc: "负责将 CUDA/NVIDIA 栈上的模型与训练流程迁移至 Ascend/CANN，关注 API 映射与精度对齐。" },
+      op: { name: "算子开发者", desc: "编写自定义 Kernel/算子，处理算子注册、精度验证与框架集成。" },
+      sys: { name: "系统调优/生态贡献者", desc: "做 Profiling、性能调优、贡献社区算子或工具，关注端到端效率与生态建设。" }
+    };
+
+    const LEVELS = {
+      novice: { name: "新手用户", desc: "首次接触目标平台，需要概念解释、步骤指引与错误兜底。" },
+      expert: { name: "专业用户", desc: "有跨平台或同类经验，需要深度 API、边界案例与性能/精度权衡建议。" }
+    };
+
+    const DATA = {};
+
+    function buildData() {
+      for (const role of Object.keys(ROLES)) {
+        DATA[role] = { novice: [], expert: [] };
+        for (const level of ["novice", "expert"]) {
+          DATA[role][level] = JOURNEY_CATS.map(cat => ({
+            l1: cat.name,
+            short: cat.short,
+            l2: cat.tasks.map(task => ({
+              key: task.k,
+              name: task.t,
+              pairs: getPairedQuestions(role, level, task.k)
+            }))
+          }));
+        }
+      }
+    }
+
+    function renderPairBlock(p, idx, compact) {
+      const head = `<div class="pair-head">
+        <span class="pair-scene">${p.scene}</span>
+        <span class="pair-goal">目的：${p.goal}</span>
+      </div>`;
+      const cols = `<div class="pair-cols">
+        <div class="pair-col cuda"><span class="pair-col-label">CUDA 提问</span>${p.cuda}</div>
+        <div class="pair-col cann"><span class="pair-col-label">CANN 提问</span>${p.cann}</div>
+      </div>`;
+      return `<div class="pair-block${compact ? '' : ' detail-pair'}">${head}${cols}</div>`;
+    }
+
+    const INSIGHTS = {
+      app: {
+        novice: ["每组提问已按「相同场景+相同目的」配对，可直接横向对比 CUDA vs CANN 完成任务所需的步骤数、文档质量、报错清晰度。", "新手在 CANN 侧「环境安装」环节通常比 CUDA 多 1-2 个概念断层（驱动/Toolkit/框架三角）。", "对比时记录：大模型回答是否给出等价路径，还是 CANN 侧需要额外绕行。"],
+        expert: ["专业用户配对问题聚焦生产约束，适合评估 CANN 在生产级场景的成熟度差距。", "重点对比：边界行为文档完整性、版本矩阵可得性、调试工具链深度。", "建议在每阶段记录「体验摩擦点」：信息获取、试错次数、社区案例可得性。"]
+      },
+      migrate: {
+        novice: ["迁移工程师应逐场景对比：同一目的下 CUDA 侧几步完成 vs CANN 侧几步完成。", "L1 迁移阶段配对问题直接支持「源→目标」双路径 diff 分析。", "记录 CANN 侧哪些场景缺少等价工具（如算子扫描、精度对比脚本）。"],
+        expert: ["专业迁移用户关注自动化与验收标准，配对问题可量化迁移闭环完整性。", "对比维度：API 映射覆盖率、权重迁移损耗、benchmark 可复现性。", "CANN 侧 ATC/OM 链路与 CUDA TensorRT 链路的步骤对称性是重点。"]
+      },
+      op: {
+        novice: ["算子开发配对问题对齐了 Hello World→注册→测试 的相同里程碑。", "对比 CUDA 与 CANN 在算子模板、编译工具链、精度验证流程上的步数差异。", "CANN 侧 TBE vs Ascend C 选型在相同场景下是否增加认知负担。"],
+        expert: ["专业算子开发者配对问题覆盖指令级优化，适合评估 CANN 优化空间文档是否充分。", "对比：profiling 到优化手段的闭环是否对称。", "关注 CANN 算子社区合入流程 vs CUDA 生态的成熟度差。"]
+      },
+      sys: {
+        novice: ["系统调优配对问题从 profiling 入门到端到端优化，场景一一对齐。", "CUDA 侧 nsys/ncu 成熟 vs CANN 侧 msprof 学习曲线——直接对比工具可得性。", "记录相同场景下定位瓶颈所需的工具切换次数。"],
+        expert: ["专业调优者配对问题支持 benchmark 方法论与 CI 回归的闭环对比。", "评估 CANN 侧性能基线维护、跨版本回归工具是否对称。", "CANN 文档碎片化程度可通过「同场景找答案耗时」量化。"]
+      }
+    };
+
+    let currentRole = 'app';
+    let currentLevel = 'novice';
+    let selectedCell = null;
+
+    function renderCellContent(l2, l1i, l2i) {
+      const id = `c-${l1i}-${l2i}`;
+      return `<div class="cell-body" id="${id}" data-l1="${l1i}" data-l2="${l2i}" onclick="selectCell(${l1i},${l2i})">
+        ${l2.pairs.map((p, i) => renderPairBlock(p, i, true)).join('')}
+      </div>`;
+    }
+
+    function renderTableRows(data) {
+      return data.map((l1, i) => {
+        const rowspan = l1.l2.length;
+        return l1.l2.map((l2, j) => {
+          const l1Cell = j === 0
+            ? `<th class="l1-col" rowspan="${rowspan}">${l1.short}</th>`
+            : '';
+          return `<tr>
+            ${l1Cell}
+            <th class="l2-col">${l2.name}</th>
+            <td class="content-col">${renderCellContent(l2, i, j)}</td>
+          </tr>`;
+        }).join('');
+      }).join('');
+    }
+
+    function render() {
+      document.getElementById('roleDesc').innerHTML =
+        `<h2>${ROLES[currentRole].name} · ${LEVELS[currentLevel].name}</h2><p>${ROLES[currentRole].desc} ${LEVELS[currentLevel].desc}</p>`;
+
+      const data = DATA[currentRole][currentLevel];
+
+      document.getElementById('journey').innerHTML = `
+        <table class="journey-table">
+          <tbody>${renderTableRows(data)}</tbody>
+        </table>`;
+
+      selectedCell = null;
+      document.getElementById('cellDetail').classList.remove('visible');
+
+      const insights = INSIGHTS[currentRole][currentLevel];
+      document.getElementById('insights').innerHTML =
+        `<h3>📊 产品研究洞察 · ${ROLES[currentRole].name}（${LEVELS[currentLevel].name}）</h3><ul>${insights.map(x => `<li>${x}</li>`).join('')}</ul>`;
+    }
+
+    function selectCell(l1i, l2i) {
+      document.querySelectorAll('.cell-body').forEach(el => el.classList.remove('active'));
+      const cell = document.getElementById(`c-${l1i}-${l2i}`);
+      if (cell) cell.classList.add('active');
+      selectedCell = { l1i, l2i };
+
+      const data = DATA[currentRole][currentLevel];
+      const l1 = data[l1i];
+      const l2 = l1.l2[l2i];
+      const detail = document.getElementById('cellDetail');
+      detail.classList.add('visible');
+      detail.innerHTML = `
+        <h3>${data[l1i].short} › ${l2.name} · ${ROLES[currentRole].name}（${LEVELS[currentLevel].name}）</h3>
+        <p style="font-size:.85rem;color:var(--muted);margin-bottom:1rem;">平行对比：相同场景、相同目的，分别向大模型提问 CUDA 与 CANN 路径，用于体验差异分析。</p>
+        ${l2.pairs.map((p, i) => renderPairBlock(p, i, false)).join('')}`;
+      detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function initControls() {
+      const roleBtns = document.getElementById('roleBtns');
+      roleBtns.innerHTML = '';
+      Object.entries(ROLES).forEach(([id, r]) => {
+        const b = document.createElement('button');
+        b.className = 'btn' + (id === currentRole ? ' active' : '');
+        b.textContent = r.name;
+        b.onclick = () => { currentRole = id; initControls(); render(); };
+        roleBtns.appendChild(b);
+      });
+      document.getElementById('levelLabel').textContent =
+        `用户经验 · ${ROLES[currentRole].name}`;
+      const levelBtns = document.getElementById('levelBtns');
+      levelBtns.innerHTML = '';
+      Object.entries(LEVELS).forEach(([id, l]) => {
+        const b = document.createElement('button');
+        b.className = 'btn' + (id === currentLevel ? ' active' : '');
+        b.textContent = l.name;
+        b.onclick = () => { currentLevel = id; initControls(); render(); };
+        levelBtns.appendChild(b);
+      });
+    }
+
+    try {
+      buildData();
+      initControls();
+      render();
+    } catch (err) {
+      console.error(err);
+      document.getElementById('roleDesc').innerHTML =
+        `<h2>页面加载失败</h2><p style="color:#b8000e;">${err.message}</p>`;
+      document.getElementById('journey').innerHTML =
+        `<p style="padding:2rem;color:#b8000e;">脚本执行出错，请刷新页面或检查浏览器控制台。</p>`;
+      document.getElementById('insights').innerHTML = '';
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+{
+  "stack": "CANN",
+  "scene": "2 · 问 AI 助手",
+  "type": "task",
+  "prompt": "从 CUDA 迁到 Ascend，这个算子常见坑有哪些？输出检查清单。",
+  "id": "cann-s2-t1",
+  "live": true,
+  "started_at": "2026-06-11T10:43:38.548084+00:00",
+  "finished_at": "2026-06-11T10:43:38.563555+00:00",
+  "environment": {
+    "python": "3.9.6",
+    "platform": "macOS-15.5-arm64-arm-64bit",
+    "torch": null,
+    "torch_version": null,
+    "cuda_available": false,
+    "torch_npu": false,
+    "torch_npu_version": null,
+    "npu_available": false,
+    "torch_error": "No module named 'torch'",
+    "torch_npu_error": "No module named 'torch_npu'"
+  },
+  "steps": [
+    {
+      "kind": "think",
+      "text": "扫描 demo_project 中 .cuda() 遗留与 NPU 迁移检查项。",
+      "ts": "2026-06-11T10:43:38.548087+00:00"
+    },
+    {
+      "kind": "tool",
+      "text": "rg 扫描迁移相关 API",
+      "ts": "2026-06-11T10:43:38.563520+00:00",
+      "command": "rg -n \\.cuda\\(|\\.npu\\(|torch_npu demo_project",
+      "exit_code": 0,
+      "stdout": "demo_project/src/models/demo.py:5:    x = x.cuda()  # 迁移遗留示例",
+      "stderr": ""
+    },
+    {
+      "kind": "reply",
+      "text": "**迁移扫描输出**\n\n```\ndemo_project/src/models/demo.py:5:    x = x.cuda()  # 迁移遗留示例\n```\n\n**检查清单**\n- [ ] cuda → npu 设备迁移\n- [ ] import torch_npu\n- [ ] CANN/驱动/torch_npu 配套\n- [ ] torch.add 试跑\n- [ ] 精度 rtol/atol 对比\n",
+      "ts": "2026-06-11T10:43:38.563548+00:00"
+    }
+  ],
+  "outcome": "产出（实测）：迁移扫描 + 检查清单已生成。"
+}

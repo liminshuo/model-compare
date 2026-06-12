@@ -1,0 +1,44 @@
+{
+  "stack": "CANN",
+  "scene": "3 · IDE 内 Agent",
+  "type": "task",
+  "prompt": "生成 NPU 探测脚本并试跑，整理支持情况与报错信息。",
+  "id": "cann-s3-t2",
+  "live": true,
+  "started_at": "2026-06-11T10:43:38.571768+00:00",
+  "finished_at": "2026-06-11T10:43:38.583785+00:00",
+  "environment": {
+    "python": "3.9.6",
+    "platform": "macOS-15.5-arm64-arm-64bit",
+    "torch": null,
+    "torch_version": null,
+    "cuda_available": false,
+    "torch_npu": false,
+    "torch_npu_version": null,
+    "npu_available": false,
+    "torch_error": "No module named 'torch'",
+    "torch_npu_error": "No module named 'torch_npu'"
+  },
+  "steps": [
+    {
+      "kind": "think",
+      "text": "生成并执行 NPU 探测脚本。",
+      "ts": "2026-06-11T10:43:38.571771+00:00"
+    },
+    {
+      "kind": "tool",
+      "text": "执行 npu_probe.py",
+      "ts": "2026-06-11T10:43:38.583753+00:00",
+      "command": "/Library/Developer/CommandLineTools/usr/bin/python3 /Users/melody/Desktop/模型对比/runner/scripts/npu_probe.py",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"/Users/melody/Desktop/模型对比/runner/scripts/npu_probe.py\", line 1, in <module>\n    import torch\nModuleNotFoundError: No module named 'torch'"
+    },
+    {
+      "kind": "reply",
+      "text": "**探测输出**\n\n```\nTraceback (most recent call last):\n  File \"/Users/melody/Desktop/模型对比/runner/scripts/npu_probe.py\", line 1, in <module>\n    import torch\nModuleNotFoundError: No module named 'torch'\n```",
+      "ts": "2026-06-11T10:43:38.583776+00:00"
+    }
+  ],
+  "outcome": "结论（实测）：见探测脚本输出。"
+}

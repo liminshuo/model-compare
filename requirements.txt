@@ -1,0 +1,2 @@
+# 可选：完整 CUDA 任务 benchmark / profiler
+# torch>=2.0

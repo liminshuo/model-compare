@@ -1,0 +1,44 @@
+{
+  "stack": "CANN",
+  "scene": "3 · IDE 内 Agent",
+  "type": "task",
+  "prompt": "扫描项目，列出所有 torch_npu 调用及可能不支持的算子。",
+  "id": "cann-s3-t1",
+  "live": true,
+  "started_at": "2026-06-11T10:43:38.564193+00:00",
+  "finished_at": "2026-06-11T10:43:38.571324+00:00",
+  "environment": {
+    "python": "3.9.6",
+    "platform": "macOS-15.5-arm64-arm-64bit",
+    "torch": null,
+    "torch_version": null,
+    "cuda_available": false,
+    "torch_npu": false,
+    "torch_npu_version": null,
+    "npu_available": false,
+    "torch_error": "No module named 'torch'",
+    "torch_npu_error": "No module named 'torch_npu'"
+  },
+  "steps": [
+    {
+      "kind": "think",
+      "text": "真实 rg 全项目 torch 调用。",
+      "ts": "2026-06-11T10:43:38.564195+00:00"
+    },
+    {
+      "kind": "tool",
+      "text": "rg torch / torch_npu 调用",
+      "ts": "2026-06-11T10:43:38.571283+00:00",
+      "command": "rg -n torch\\.|torch_npu demo_project",
+      "exit_code": 0,
+      "stdout": "demo_project/src/ops/custom_add.py:5:    \"\"\"Hello World 自定义 wrapper — 语义等价于 torch.add\"\"\"\ndemo_project/src/ops/custom_add.py:9:class CustomAddModule(torch.nn.Module):",
+      "stderr": ""
+    },
+    {
+      "kind": "reply",
+      "text": "**项目扫描**\n\n```\ndemo_project/src/ops/custom_add.py:5:    \"\"\"Hello World 自定义 wrapper — 语义等价于 torch.add\"\"\"\ndemo_project/src/ops/custom_add.py:9:class CustomAddModule(torch.nn.Module):\n```",
+      "ts": "2026-06-11T10:43:38.571318+00:00"
+    }
+  ],
+  "outcome": "结论（实测）：扫描结果见输出。"
+}
