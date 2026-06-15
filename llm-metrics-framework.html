@@ -89,12 +89,12 @@
       margin-bottom: .85rem;
     }
     .layer-badge {
-      font-size: .72rem; font-weight: 800; color: #fff;
+      font-size: .72rem; font-weight: 800; color: #ffffff;
       padding: .3rem .7rem; border-radius: 6px; letter-spacing: .04em;
     }
-    .layer-badge.exec { background: var(--exec); }
-    .layer-badge.content { background: var(--content); }
-    .layer-badge.output { background: var(--output); }
+    .layer-badge.exec { background: var(--exec); color: #ffffff; }
+    .layer-badge.content { background: var(--content); color: #ffffff; }
+    .layer-badge.output { background: var(--output); color: #ffffff; }
     .layer-head h2 { font-size: 1.1rem; }
     .layer-head span { font-size: .82rem; color: var(--muted); }
     .table-wrap {
@@ -169,6 +169,10 @@
     .glossary-table .metric-name code[data-tip] {
       cursor: help; text-decoration: underline dotted #b45309;
     }
+    .glossary-table .metric-cn {
+      font-size: .74rem; font-weight: 600; color: var(--text);
+      white-space: nowrap; min-width: 88px;
+    }
     .glossary-table .formula-cell {
       font-family: ui-monospace, monospace;
       font-size: .68rem; color: #1e3a8a;
@@ -181,6 +185,27 @@
     .glossary-table .ref-cell em {
       font-style: normal; color: #4338ca; font-weight: 600;
     }
+    .glossary-table .kei-cell {
+      font-size: .7rem; line-height: 1.45; min-width: 140px;
+    }
+    .kei-journey {
+      display: inline-block; font-size: .58rem; font-weight: 700;
+      padding: .08rem .3rem; border-radius: 3px; margin-right: .15rem;
+      background: #ede9fe; color: #5b21b6; vertical-align: middle;
+    }
+    .kei-na { color: #9ca3af; font-style: italic; }
+    .tp-id {
+      font-size: .6rem; font-weight: 700; font-family: ui-monospace, monospace;
+      background: #ecfdf5; color: #047857;
+      padding: .05rem .28rem; border-radius: 3px; white-space: nowrap;
+    }
+    .tp-touch {
+      display: inline-block; font-size: .56rem; font-weight: 600;
+      padding: .06rem .28rem; border-radius: 3px; margin-right: .12rem;
+      background: #f0fdf4; color: #166534; vertical-align: middle;
+    }
+    .tp-primary { font-size: .58rem; font-weight: 700; color: #047857; }
+    .tp-alt { font-size: .62rem; color: #6b7280; margin-top: .2rem; display: block; }
     .layer-pill {
       display: inline-block; font-size: .62rem; font-weight: 800;
       padding: .15rem .45rem; border-radius: 4px; white-space: nowrap;
@@ -233,6 +258,12 @@
       text-underline-offset: 2px;
     }
     code.core-metric[data-tip] { text-decoration: underline dotted #b45309; }
+    .metric-cn-label {
+      font-size: .72rem; font-weight: 700; color: #374151;
+      margin-left: .2rem;
+    }
+    .metric-table .core-metric + .metric-cn-label { margin-left: .35rem; }
+    .metric-table code + .metric-cn-label { margin-left: .25rem; }
     .dim-chip[data-tip] { text-decoration: none; }
     .dim-chip[data-tip]:hover { border-color: #f59e0b; }
     .metric-tip {
@@ -336,7 +367,7 @@
       <span class="dim-chip" data-tip="多轮会话中多久到达可停止结论。主指标 TTC = t_conclusion − t_query（秒或轮次）。">多轮收敛 · TTC</span>
       <span class="dim-chip" data-tip="单次回答多快给出可停止的决策结论。主指标 TTFD：决策句在全文中的 token 位置比，≤0.25 为优。">快速给答 · TTFD（输出层）</span>
       <span class="dim-chip" data-tip="依据是否来自该栈官方一手源（非 CUDA 博客充当 CANN 依据）。主指标 OSR = 官方域引用 / 总引用。">官方信息占比 · OSR</span>
-      <span class="dim-chip" data-tip="API、支持清单、CANN 版本是否与真实环境一致。主指标 HalRate：编造/不可验证陈述占比，≤0.05 为优。">信息时效性 · HalRate</span>
+      <span class="dim-chip" data-tip="API、支持清单、CANN 版本是否与真实环境一致。主指标 VerAcc：版本/配套陈述与官方 release 一致率，=1.0 为优。">信息时效性 · VerAcc</span>
       <span class="dim-chip" data-tip="是否覆盖环节栈特有检查项（如 torch_npu 清单、CANN 配套）。主指标 Cov@checklist = 命中项 / 必备项。">知识覆盖率 · Cov@checklist</span>
       <span class="dim-chip" data-tip="同功能代码是否足够短、简单。主指标 CSC = 参考最简 LoC / 回答 LoC，环节 5–6 必评。">代码简洁性 · CSC</span>
       <span class="dim-chip" data-tip="脚本/命令能否少改即跑、闭环到环节产出。主指标 pass@1：代码块一次 sandbox 试跑成功率。">可执行性与完整性 · pass@1</span>
@@ -344,7 +375,8 @@
 
     <div class="glossary-box">
       <h3>核心指标速查（Gold Set 说明）</h3>
-      <p style="font-size:.78rem;color:var(--muted);margin-bottom:.5rem;">与三层表格高亮列主指标一致，建议每条配对必报 Δ。指标名称 hover 可查看补充说明。</p>
+      <p style="font-size:.78rem;color:var(--muted);margin-bottom:.5rem;">与三层表格高亮列主指标一致，建议每条配对必报 Δ。<strong>Gold Set</strong> = LLM 配对测度；<strong>触点 tp-id</strong>（<a href="touchpoint-metrics.md" target="_blank" rel="noopener">touchpoint-metrics.md</a> / 页面一右侧目录）= 产品触点 Agent 打分口径。下表最后一列为触点对照索引。</p>
+      <p style="font-size:.72rem;color:var(--muted);margin-bottom:.75rem;padding:.5rem .65rem;background:#f8fafc;border-radius:6px;border-left:3px solid #c4b5fd;"><strong>为何一项 Gold 可对应多个 tp-id？</strong> 同一公式（如 Recall@k）在不同触点（资料/文档、工具、版本包…）各有 Agent 打分口径；列<strong>主对照</strong>为语义最近的一条，其余为同维度在其他触点的落地。<em>每条配对只报当前环节相关的 tp-id</em>。</p>
       <p style="font-size:.72rem;color:var(--muted);margin-bottom:.75rem;">
         <span class="auto-pill full">全自动</span> 规则+日志/script 可复算 &nbsp;
         <span class="auto-pill semi">半自动</span> 需预定义 Gold/checklist，部分步骤可脚本 &nbsp;
@@ -355,109 +387,131 @@
           <thead>
             <tr>
               <th>指标名称</th>
+              <th>中文名称</th>
               <th>指标定义</th>
               <th>计算方法</th>
               <th>自动化程度</th>
               <th>所属模块</th>
               <th>所属层</th>
+              <th>触点指标 (tp-id)</th>
               <th>文献依据</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td class="metric-name"><code data-tip="前 k 次检索或引用中，命中环节 Gold 文档集的比例。CANN 侧常需更多检索才覆盖 hiascend 官方源。">Recall@k</code></td>
+              <td class="metric-cn">检索召回率</td>
               <td>前 k 次检索/引用中，命中<strong>环节 Gold 文档集</strong>的比例；衡量是否找全官方依据。</td>
               <td class="formula-cell">Recall@k = |Relevant ∩ Top-k| / |Relevant|</td>
               <td><span class="auto-pill semi">半自动</span><span class="auto-note">检索 log 可自动解析；Gold 文档集与相关性需预定义</span></td>
               <td>检索深度与精准度</td>
               <td><span class="layer-pill exec">执行层</span></td>
+              <td class="kei-cell"><span class="tp-primary">主对照</span> <span class="tp-id">tp-id-001</span> <span class="tp-touch">资料/文档</span>检索命中率<br><span class="tp-alt">同维度·其他触点：<span class="tp-id">tp-id-003</span> 多入口可达率（资料）；<span class="tp-id">tp-id-046</span> 有效获取渠道数（工具）</span></td>
               <td class="ref-cell"><em>Manning et al., 2008</em> 经典 IR；<em>Pirolli &amp; Card, 1999</em> 信息觅食</td>
             </tr>
             <tr>
               <td class="metric-name"><code data-tip="首个相关 Gold 文档排名的倒数。越接近 1 表示越早找到官方文档，MRR≥0.5 为优。">MRR</code></td>
+              <td class="metric-cn">平均倒数排名</td>
               <td>首个相关 Gold 文档排名的<strong>倒数均值</strong>；衡量检索排序是否把官方文档排前面。</td>
               <td class="formula-cell">MRR = mean(1 / rank<sub>first relevant</sub>)</td>
               <td><span class="auto-pill semi">半自动</span><span class="auto-note">同 Recall@k，依赖 Gold 相关性判定</span></td>
               <td>检索深度与精准度</td>
               <td><span class="layer-pill exec">执行层</span></td>
+              <td class="kei-cell"><span class="tp-id">tp-id-002</span> <span class="tp-touch">资料/文档</span>文档跳转次数<br><span class="tp-id">tp-id-004</span> 单次任务文档跳转浏览次数<br><span class="tp-id">tp-id-047</span> <span class="tp-touch">工具</span>检索平均轮次</td>
               <td class="ref-cell"><em>Manning et al., 2008</em> Mean Reciprocal Rank 标准定义</td>
             </tr>
             <tr>
               <td class="metric-name"><code data-tip="有效步骤数 / 专家最短路径。>2.0 视为路径冗余，≤1.2 为优。">NPL</code></td>
+              <td class="metric-cn">归一化路径长度</td>
               <td>从提问到环节产出的<strong>有效步骤数</strong>相对专家最短路径的归一化长度。</td>
               <td class="formula-cell">NPL = STS / STS<sub>baseline</sub></td>
               <td><span class="auto-pill semi">半自动</span><span class="auto-note">步数可计 log；「有效步骤」与 baseline 需专家路径</span></td>
               <td>路径效率</td>
               <td><span class="layer-pill exec">执行层</span></td>
+              <td class="kei-cell"><span class="tp-id">tp-id-050</span> <span class="tp-touch">工具</span>平均操作步数<br><span class="tp-id">tp-id-067</span> <span class="tp-touch">版本发布包</span>版本部署命令数<br><span class="tp-id">tp-id-068</span> 版本切换配置修改量<br><span class="tp-id">tp-id-071</span> <span class="tp-touch">运行反馈</span>反馈信息调取命令数</td>
               <td class="ref-cell"><em>Card et al., 1980</em> GOMS/KLM 最小操作路径；HCI 任务效率测度</td>
             </tr>
             <tr>
               <td class="metric-name"><code data-tip="从提问到出现可停止结论的时间或轮次。多轮 Agent 场景主指标。">TTC</code></td>
+              <td class="metric-cn">到达结论耗时</td>
               <td>从提问到出现<strong>可停止结论</strong>的时间（秒）或对话轮次。</td>
               <td class="formula-cell">TTC = t<sub>conclusion</sub> − t<sub>query</sub>（或轮次数）</td>
               <td><span class="auto-pill semi">半自动</span><span class="auto-note">时间戳/轮次客观；「结论出现」需 slot 规则或标注</span></td>
               <td>多轮收敛</td>
               <td><span class="layer-pill exec">执行层</span></td>
+              <td class="kei-cell"><span class="kei-na">触点无时长型 tp-id</span>；间接：<span class="tp-id">tp-id-001</span> 含搜索时长、<span class="tp-id">tp-id-004</span> 浏览次数</td>
               <td class="ref-cell"><em>Young et al., 2013</em> 任务型对话；<em>Mehri et al., 2019</em> USR；<em>Miller, 1968</em> 响应时间</td>
             </tr>
             <tr>
               <td class="metric-name"><code data-tip="官方域引用数 / 总引用数。CANN 应引用 hiascend.com，错引 CUDA 源会降低分。">OSR</code></td>
+              <td class="metric-cn">官方信息占比</td>
               <td>引用中来自<strong>该栈官方一手源</strong>的比例（非 CUDA 博客充当 CANN 依据）。</td>
               <td class="formula-cell">OSR = #official_cites / #total_cites</td>
               <td><span class="auto-pill full">全自动</span><span class="auto-note">栈级域名白名单 + URL 抽取即可复算</span></td>
               <td>官方信息占比</td>
               <td><span class="layer-pill content">内容层</span></td>
+              <td class="kei-cell"><span class="tp-id">tp-id-011</span> <span class="tp-touch">资料/文档</span>内/外链有效率<br><span class="kei-na">间接</span>有效链指向官方域比例</td>
               <td class="ref-cell">CRAAP 信源评估框架；Epistemic trust；引用权威分析（bibliometrics）</td>
             </tr>
             <tr>
-              <td class="metric-name"><code data-tip="编造或不可验证 API/事实占全部陈述的比例。CANN 侧 torch_npu 幻觉为 fatal，≤0.05 为优。">HalRate</code></td>
-              <td>编造或不可验证的 API、支持清单、版本信息等占全部可核查陈述的比例。</td>
-              <td class="formula-cell">HalRate = #hallucinated_claims / #total_claims</td>
-              <td><span class="auto-pill manual">需标注</span><span class="auto-note">claim 分解与 API/版本真伪需对照 Gold 或人工核查</span></td>
+              <td class="metric-name"><code data-tip="回答中 CANN/CUDA 版本号、配套关系是否与官方 release notes / 检索页一致。CANN 侧漏写版本要求为 fatal。">VerAcc</code></td>
+              <td class="metric-cn">版本准确率</td>
+              <td>回答中<strong>版本号、CANN/CUDA 配套关系</strong>是否与官方 release notes、检索页一致；任务要求注明版本时必须给出可核查陈述。</td>
+              <td class="formula-cell">VerAcc = #correct_version_claims / #version_claims</td>
+              <td><span class="auto-pill semi">半自动</span><span class="auto-note">版本串可 NER 抽取；真伪对照 release notes / 检索 URL，深度分级常需标注</span></td>
               <td>信息时效性与 API 幻觉</td>
               <td><span class="layer-pill content">内容层</span></td>
-              <td class="ref-cell"><em>Ji et al., 2023</em> NLG 幻觉综述；HaluEval 实体级 P/R 评估范式</td>
+              <td class="kei-cell"><span class="tp-id">tp-id-012</span> <span class="tp-touch">资料/文档</span>文档错误点位密度（版本类）<br><span class="kei-journey">易部署</span>版本配套关系准确性</td>
+              <td class="ref-cell"><b>软件版本兼容性</b>理论；release notes 对照；实体级 P/R 评估范式</td>
             </tr>
             <tr>
               <td class="metric-name"><code data-tip="环节必备 checklist 命中比例。同构 checklist 下比较 CUDA/CANN 是否系统性漏项。">Cov@checklist</code></td>
+              <td class="metric-cn">检查清单覆盖率</td>
               <td>回答覆盖环节<strong>栈特有检查项</strong>（如 torch_npu 清单、CANN 配套）的比例。</td>
               <td class="formula-cell">Cov@checklist = |hit ∩ required| / |required|</td>
               <td><span class="auto-pill semi">半自动</span><span class="auto-note">checklist 固定后可关键词/NER；深度分级（DOK）常需标注</span></td>
               <td>知识覆盖率</td>
               <td><span class="layer-pill content">内容层</span></td>
+              <td class="kei-cell"><span class="tp-id">tp-id-006</span> <span class="tp-touch">资料/文档</span>FAQ 命中率<br><span class="tp-id">tp-id-007</span> 文档结构风格一致率<br><span class="tp-id">tp-id-030</span> <span class="tp-touch">API</span>接口自解释读懂率<br><span class="tp-id">tp-id-043</span> <span class="tp-touch">源码&示例</span>编程模型标准对齐率<br><span class="tp-id">tp-id-075</span> <span class="tp-touch">运行反馈</span>错误码配套信息完整性</td>
               <td class="ref-cell"><em>Es et al., 2023</em> RAGAS Context Recall；集合覆盖率；<em>Webb, 2002</em> DOK 深度分级</td>
             </tr>
             <tr>
               <td class="metric-name"><code data-tip="代码块复制到 sandbox 一次试跑的成功率。含代码环节建议必报。">pass@1</code></td>
+              <td class="metric-cn">一次试跑成功率</td>
               <td>回答中代码块复制到 sandbox <strong>一次试跑</strong>是否成功；衡量能否少改即跑。</td>
               <td class="formula-cell">pass@1 = #run_ok / #code_blocks</td>
               <td><span class="auto-pill full">全自动</span><span class="auto-note">sandbox 试跑，exit code 客观</span></td>
               <td>可执行性与完整性</td>
               <td><span class="layer-pill output">输出层</span></td>
+              <td class="kei-cell"><span class="tp-id">tp-id-017</span> <span class="tp-touch">资料/文档</span>一次跑通成功率<br><span class="tp-id">tp-id-048</span> <span class="tp-touch">工具</span>首次安装/部署一次性成功率<br><span class="tp-id">tp-id-049</span> 前置依赖手动补充率（反向）</td>
               <td class="ref-cell"><em>Chen et al., 2021</em> HumanEval pass@k；JTBD 任务完成度</td>
             </tr>
             <tr>
               <td class="metric-name"><code data-tip="决策句首次出现的 token 位置 / 全文 token 数。≤0.25 为优，表示前 25% 即给结论。">TTFD</code></td>
+              <td class="metric-cn">决策句前置度</td>
               <td>单次回答中，<strong>决策句</strong>（自研/组合/等）首次出现的位置占全文比例。</td>
               <td class="formula-cell">TTFD = tokens<sub>decision</sub> / tokens<sub>total</sub></td>
               <td><span class="auto-pill semi">半自动</span><span class="auto-note">token 计数客观；决策句可用规则或双盲标注</span></td>
               <td>快速给答</td>
               <td><span class="layer-pill output">输出层</span></td>
+              <td class="kei-cell"><span class="kei-na">触点无 tp-id</span>（LLM 回答结构专有）</td>
               <td class="ref-cell"><em>Miller, 1968</em> 人机对话响应时间；Grice 合作原则·量准则</td>
             </tr>
             <tr>
               <td class="metric-name"><code data-tip="参考最简实现 LoC / 回答代码 LoC。≥1 表示足够简洁，环节 5–6 必评。">CSC</code></td>
+              <td class="metric-cn">代码简洁系数</td>
               <td>同功能下，回答代码相对<strong>参考最简实现</strong>是否足够短、足够简单。</td>
               <td class="formula-cell">CSC = LoC<sub>ref</sub> / LoC<sub>answer</sub></td>
               <td><span class="auto-pill full">全自动</span><span class="auto-note">参考实现固定后 LoC 可脚本统计</span></td>
               <td>代码简洁性</td>
               <td><span class="layer-pill output">输出层</span></td>
+              <td class="kei-cell"><span class="tp-id">tp-id-067</span> <span class="tp-touch">版本发布包</span>版本部署命令数<br><span class="tp-id">tp-id-068</span> 版本切换配置修改量<br><span class="tp-id">tp-id-050</span> <span class="tp-touch">工具</span>平均操作步数</td>
               <td class="ref-cell"><em>McCabe, 1976</em> 圈复杂度；Clean Code 简洁原则；ISO/IEC 25010 可维护性</td>
             </tr>
           </tbody>
         </table>
       </div>
-      <p style="margin-top:.65rem;color:var(--muted);">Gold Set 由研究者按环节预定义：如环节 1 CUDA 含 {torch.add 文档, cuBLAS L1, Custom Op 教程}；CANN 含 {torch_npu 清单, CANN 配套表, Ascend C 流程}。配对任务共用<strong>同构 checklist</strong>，栈特有项分开列。完整书目见页底<strong>主要理论参考文献</strong>。</p>
+      <p style="margin-top:.65rem;color:var(--muted);">Gold Set 由研究者按环节预定义：如环节 1 CUDA 含 {torch.add 文档, cuBLAS L1, Custom Op 教程}；CANN 含 {torch_npu 清单, CANN 配套表, Ascend C 流程}。配对任务共用<strong>同构 checklist</strong>，栈特有项分开列。触点 tp-id 完整 23 项见 <a href="touchpoint-metrics.md" target="_blank" rel="noopener">touchpoint-metrics.md</a>。完整书目见页底<strong>主要理论参考文献</strong>。</p>
       <p style="margin-top:.5rem;"><a href="llm-metrics-results.html?pair=s1-q1" style="color:var(--accent);font-weight:600;">→ 查看环节 1 首对问题实测跑分（页面四）</a></p>
     </div>
 
@@ -491,47 +545,47 @@
               <th>核心<br>指标</th>
               <td>
                 <ul>
-                  <li><code class="core-metric" data-tip="前 k 次检索或引用中，命中环节 Gold 文档集的比例。CANN 侧常需更多检索才覆盖 hiascend 官方源。">Recall@k</code> — Gold 文档命中率 <em style="font-size:.65rem;color:var(--muted)">必报</em></li>
-                  <li><code class="core-metric" data-tip="Mean Reciprocal Rank：首个相关 Gold 文档排名的倒数。越接近 1 表示越早找到官方文档，MRR≥0.5 为优。">MRR</code> — 首个相关文档排名 <em style="font-size:.65rem;color:var(--muted)">必报</em></li>
-                  <li><code>nDCG@k</code> — 排序质量</li>
-                  <li><code>Context Precision</code>（RAGAS）</li>
+                  <li><code class="core-metric" data-tip="前 k 次检索或引用中，命中环节 Gold 文档集的比例。CANN 侧常需更多检索才覆盖 hiascend 官方源。">Recall@k</code><span class="metric-cn-label">检索召回率</span> <em style="font-size:.65rem;color:var(--muted)">必报</em></li>
+                  <li><code class="core-metric" data-tip="Mean Reciprocal Rank：首个相关 Gold 文档排名的倒数。越接近 1 表示越早找到官方文档，MRR≥0.5 为优。">MRR</code><span class="metric-cn-label">平均倒数排名</span> <em style="font-size:.65rem;color:var(--muted)">必报</em></li>
+                  <li><code>nDCG@k</code><span class="metric-cn-label">归一化折损累积增益</span></li>
+                  <li><code>Context Precision</code><span class="metric-cn-label">上下文精确率</span>（RAGAS）</li>
                 </ul>
                 <span class="formula">Recall@k = |Relevant ∩ Top-k| / |Relevant|<br>MRR = 1/rank<sub>first relevant</sub></span>
               </td>
               <td>
                 <ul>
-                  <li><code>Tool Success Rate</code> (TSR)</li>
-                  <li><code>Tool Selection Accuracy</code></li>
-                  <li><code>Invocation Precision / Recall</code></li>
-                  <li>Observation Utilization Rate</li>
+                  <li><code>TSR</code><span class="metric-cn-label">工具调用成功率</span></li>
+                  <li><code>Tool Selection Accuracy</code><span class="metric-cn-label">工具选择准确率</span></li>
+                  <li><code>Invocation P/R</code><span class="metric-cn-label">调用精确率/召回率</span></li>
+                  <li><code>Util</code><span class="metric-cn-label">观察结果利用率</span></li>
                 </ul>
                 <span class="formula">TSR = #success / #invocations<br>Util = cited_obs / total_obs</span>
               </td>
               <td>
                 <ul>
-                  <li><code>STS</code> Steps-to-Success</li>
-                  <li><code class="core-metric" data-tip="Normalized Path Length = 有效步骤数 / 专家最短路径。衡量路径是否冗余，>2.0 视为绕路过多。">NPL</code> Normalized Path Length <em style="font-size:.65rem;color:var(--muted)">必报</em></li>
-                  <li><code>DE</code> Dialogue Efficiency</li>
-                  <li>Redundant Step Rate</li>
+                  <li><code>STS</code><span class="metric-cn-label">成功所需步数</span></li>
+                  <li><code class="core-metric" data-tip="Normalized Path Length = 有效步骤数 / 专家最短路径。衡量路径是否冗余，>2.0 视为绕路过多。">NPL</code><span class="metric-cn-label">归一化路径长度</span> <em style="font-size:.65rem;color:var(--muted)">必报</em></li>
+                  <li><code>DE</code><span class="metric-cn-label">对话效率</span></li>
+                  <li><code>RSR</code><span class="metric-cn-label">冗余步骤率</span></li>
                 </ul>
                 <span class="formula">NPL = STS / STS<sub>baseline</sub></span>
               </td>
               <td>
                 <ul>
-                  <li><code class="core-metric" data-tip="Time-to-Conclusion = 从提问到出现可停止结论的时间或轮次。多轮 Agent 场景主指标。">TTC</code> Time-to-Conclusion <em style="font-size:.65rem;color:var(--muted)">必报</em></li>
-                  <li><code>DE</code> Dialogue Efficiency</li>
-                  <li><code>TTFD</code> Time-to-First-Decision</li>
-                  <li><code>TTFR</code> Time-to-First-Response</li>
+                  <li><code class="core-metric" data-tip="Time-to-Conclusion = 从提问到出现可停止结论的时间或轮次。多轮 Agent 场景主指标。">TTC</code><span class="metric-cn-label">到达结论耗时</span> <em style="font-size:.65rem;color:var(--muted)">必报</em></li>
+                  <li><code>DE</code><span class="metric-cn-label">对话效率</span></li>
+                  <li><code class="core-metric" data-tip="Time-to-First-Decision = 决策句首次出现的 token 位置 / 全文 token 数。越小表示越早给出结论，≤0.25 为优。">TTFD</code><span class="metric-cn-label">决策句前置度</span></li>
+                  <li><code>TTFR</code><span class="metric-cn-label">首响耗时</span></li>
                 </ul>
                 <span class="formula">TTC = t<sub>conclusion</sub> − t<sub>query</sub>；单轮 TTFD 见输出层</span>
               </td>
             </tr>
             <tr class="compare-row">
               <th>对照<br>Δ 指标</th>
-              <td><code class="core-metric" data-tip="配对差值：Recall@k 的 CANN−CUDA 差。正值表示 CANN 检索覆盖 Gold 更差。">ΔRecall@k</code> 必报；<code class="core-metric" data-tip="配对差值：MRR 的 CANN−CUDA 差。负值表示 CANN 首个相关文档排得更靠后。">ΔMRR</code> 必报；<code>ΔnDCG@k</code> 可选。</td>
-              <td><code>ΔTSR</code>、<code>ΔUtil</code>：NPU 环境缺失导致的工具失败差。</td>
-              <td><code class="core-metric" data-tip="配对差值：路径长度归一化指标的 CANN−CUDA 差。正值表示 CANN 侧步骤/路径更长。">ΔNPL</code> 必报；<code>ΔSTS</code>、<code>ΔDE</code> 可选。</td>
-              <td><code class="core-metric" data-tip="配对差值：到达结论时间的 CANN−CUDA 差。正值表示 CANN 侧更慢收敛。">ΔTTC</code> 必报；<code>ΔDE</code> 可选。</td>
+              <td><code class="core-metric" data-tip="配对差值：Recall@k 的 CANN−CUDA 差。正值表示 CANN 检索覆盖 Gold 更差。">ΔRecall@k</code><span class="metric-cn-label">Δ检索召回率</span> 必报；<code class="core-metric" data-tip="配对差值：MRR 的 CANN−CUDA 差。负值表示 CANN 首个相关文档排得更靠后。">ΔMRR</code><span class="metric-cn-label">Δ平均倒数排名</span> 必报；<code>ΔnDCG@k</code><span class="metric-cn-label">Δ归一化折损累积增益</span> 可选。</td>
+              <td><code>ΔTSR</code><span class="metric-cn-label">Δ工具调用成功率</span>、<code>ΔUtil</code><span class="metric-cn-label">Δ观察结果利用率</span>：NPU 环境缺失导致的工具失败差。</td>
+              <td><code class="core-metric" data-tip="配对差值：路径长度归一化指标的 CANN−CUDA 差。正值表示 CANN 侧步骤/路径更长。">ΔNPL</code><span class="metric-cn-label">Δ归一化路径长度</span> 必报；<code>ΔSTS</code><span class="metric-cn-label">Δ成功所需步数</span>、<code>ΔDE</code><span class="metric-cn-label">Δ对话效率</span> 可选。</td>
+              <td><code class="core-metric" data-tip="配对差值：到达结论时间的 CANN−CUDA 差。正值表示 CANN 侧更慢收敛。">ΔTTC</code><span class="metric-cn-label">Δ到达结论耗时</span> 必报；<code>ΔDE</code><span class="metric-cn-label">Δ对话效率</span> 可选。</td>
             </tr>
             <tr>
               <th>度量<br>协议</th>
@@ -589,46 +643,46 @@
               <th>核心<br>指标</th>
               <td>
                 <ul>
-                  <li><code class="core-metric" data-tip="Official Source Ratio = 官方域引用数 / 总引用数。CANN 任务应引用 hiascend.com，错引 CUDA 源会降低 Stack-Valid。">OSR</code> Official Source Ratio <em style="font-size:.65rem;color:var(--muted)">必报</em></li>
-                  <li><code>Stack-Valid Rate</code></li>
-                  <li><code>Citation Precision</code></li>
+                  <li><code class="core-metric" data-tip="Official Source Ratio = 官方域引用数 / 总引用数。CANN 任务应引用 hiascend.com，错引 CUDA 源会降低 Stack-Valid。">OSR</code><span class="metric-cn-label">官方信息占比</span> <em style="font-size:.65rem;color:var(--muted)">必报</em></li>
+                  <li><code>Stack-Valid</code><span class="metric-cn-label">栈有效性比率</span></li>
+                  <li><code>Citation Precision</code><span class="metric-cn-label">引用精确率</span></li>
                 </ul>
                 <span class="formula">OSR = #official / #total cites</span>
               </td>
               <td>
                 <ul>
-                  <li><code class="core-metric" data-tip="幻觉率 = 编造或不可验证的 API/事实数 / 陈述总数。CANN 侧编造 torch_npu 支持属致命项，≤0.05 为优。">HalRate</code> 幻觉率 <em style="font-size:.65rem;color:var(--muted)">必报</em></li>
-                  <li><code>API Entity P/R/F1</code></li>
-                  <li><code>VerAcc</code> Version Accuracy</li>
-                  <li><code>Temporal Validity Rate</code></li>
+                  <li><code class="core-metric" data-tip="Version Accuracy = 回答中版本/配套陈述与官方 release、检索页一致的比例。CANN 任务要求注明版本时漏写为 fatal，VerAcc=1.0 为优。">VerAcc</code><span class="metric-cn-label">版本准确率</span> <em style="font-size:.65rem;color:var(--muted)">必报</em></li>
+                  <li><code>HalRate</code><span class="metric-cn-label">幻觉率</span></li>
+                  <li><code>API Entity P/R/F1</code><span class="metric-cn-label">API 实体精确率/召回率/F1</span></li>
+                  <li><code>Temporal Validity</code><span class="metric-cn-label">时效有效性比率</span></li>
                 </ul>
-                <span class="formula">HalRate = #hallucinated / #claims<br>P/R vs API Gold Inventory</span>
+                <span class="formula">VerAcc = #correct_version / #version_claims<br>HalRate = #hallucinated / #claims（选填）</span>
               </td>
               <td>
                 <ul>
-                  <li><code class="core-metric" data-tip="环节必备知识单元覆盖率 = |回答命中 ∩ checklist| / |checklist|。同构 checklist 下比较 CUDA/CANN 是否系统性漏项。">Cov@checklist</code> <em style="font-size:.65rem;color:var(--muted)">必报</em></li>
-                  <li><code>DWC</code> DOK 加权深度</li>
-                  <li><code>Context Recall</code>（RAGAS）</li>
-                  <li>Depth Level L1/L2/L3 分布</li>
+                  <li><code class="core-metric" data-tip="环节必备知识单元覆盖率 = |回答命中 ∩ checklist| / |checklist|。同构 checklist 下比较 CUDA/CANN 是否系统性漏项。">Cov@checklist</code><span class="metric-cn-label">检查清单覆盖率</span> <em style="font-size:.65rem;color:var(--muted)">必报</em></li>
+                  <li><code>DWC</code><span class="metric-cn-label">DOK 加权深度</span></li>
+                  <li><code>Context Recall</code><span class="metric-cn-label">上下文召回率</span>（RAGAS）</li>
+                  <li><code>Depth L1/L2/L3</code><span class="metric-cn-label">深度等级分布</span></li>
                 </ul>
                 <span class="formula">DWC = Σ w·DOK / Σ w<br>L3=给验证步骤, L2=解释, L1=提及</span>
               </td>
               <td>
                 <ul>
-                  <li><code>Faithfulness</code>（RAGAS）</li>
-                  <li><code>Label Accuracy</code>（FEVER）</li>
-                  <li><code>Claim-level F1</code></li>
-                  <li><code>Decision Error Rate</code> (DER)</li>
+                  <li><code>Faithfulness</code><span class="metric-cn-label">忠实度</span>（RAGAS）</li>
+                  <li><code>Label Accuracy</code><span class="metric-cn-label">标签准确率</span>（FEVER）</li>
+                  <li><code>Claim-level F1</code><span class="metric-cn-label">陈述级 F1</span></li>
+                  <li><code>DER</code><span class="metric-cn-label">决策错误率</span></li>
                 </ul>
                 <span class="formula">Faith = supported / total_claims<br>DER = wrong_decision / total</span>
               </td>
             </tr>
             <tr class="compare-row">
               <th>对照<br>Δ 指标</th>
-              <td><code class="core-metric" data-tip="配对差值：官方信息占比 CANN−CUDA。负值表示 CANN 回答更少引用官方源。">ΔOSR</code> 必报；<code>ΔStack-Valid</code> 可选。</td>
-              <td><code class="core-metric" data-tip="配对差值：幻觉率 CANN−CUDA。正值表示 CANN 侧幻觉更多。">ΔHalRate</code> 必报；<code>ΔAPI-F1</code>、<code>ΔVerAcc</code> 可选。</td>
-              <td><code class="core-metric" data-tip="配对差值：checklist 覆盖率 CANN−CUDA。负值表示 CANN 漏覆盖栈特有检查项。">ΔCov@checklist</code> 必报；<code>ΔDWC</code> 可选。</td>
-              <td><code>ΔFaithfulness</code>、<code>ΔDER</code>：致命决策错误栈分布。</td>
+              <td><code class="core-metric" data-tip="配对差值：官方信息占比 CANN−CUDA。负值表示 CANN 回答更少引用官方源。">ΔOSR</code><span class="metric-cn-label">Δ官方信息占比</span> 必报；<code>ΔStack-Valid</code><span class="metric-cn-label">Δ栈有效性</span> 可选。</td>
+              <td><code class="core-metric" data-tip="配对差值：版本准确率 CANN−CUDA。负值表示 CANN 侧版本/配套陈述更不准确或漏写。">ΔVerAcc</code><span class="metric-cn-label">Δ版本准确率</span> 必报；<code>ΔHalRate</code><span class="metric-cn-label">Δ幻觉率</span>、<code>ΔAPI-F1</code><span class="metric-cn-label">Δ API 实体 F1</span> 可选。</td>
+              <td><code class="core-metric" data-tip="配对差值：checklist 覆盖率 CANN−CUDA。负值表示 CANN 漏覆盖栈特有检查项。">ΔCov@checklist</code><span class="metric-cn-label">Δ检查清单覆盖率</span> 必报；<code>ΔDWC</code><span class="metric-cn-label">Δ DOK 加权深度</span> 可选。</td>
+              <td><code>ΔFaithfulness</code><span class="metric-cn-label">Δ忠实度</span>、<code>ΔDER</code><span class="metric-cn-label">Δ决策错误率</span>：致命决策错误栈分布。</td>
             </tr>
             <tr>
               <th>度量<br>协议</th>
@@ -640,7 +694,7 @@
             <tr>
               <th>阈值<br>参考</th>
               <td>OSR≥0.7 且 Stack-Valid≥0.9；CANN 错引 CUDA 源 → Stack-Valid 下降。</td>
-              <td>HalRate≤0.05 为优；API-F1≥0.9；VerAcc=1.0 为硬性要求（版本类）。</td>
+              <td>VerAcc=1.0 为硬性要求；API-F1≥0.9；HalRate≤0.05 为优（选填）。</td>
               <td>Cov@checklist≥0.85；Context Recall≥0.8（RAGAS 常用区间）。</td>
               <td>Faithfulness≥0.9；DER=0 为优；任一 fatal claim → 样本 invalid。</td>
             </tr>
@@ -690,62 +744,62 @@
               <th>核心<br>指标</th>
               <td>
                 <ul>
-                  <li><code>NASA-TLX</code> 认知负荷（6 维）</li>
-                  <li><code>Extraneous Load Index</code></li>
-                  <li><code>Jargon Density</code> (JD)</li>
+                  <li><code>NASA-TLX</code><span class="metric-cn-label">认知负荷量表</span>（6 维）</li>
+                  <li><code>ELI</code><span class="metric-cn-label">外在负荷指数</span></li>
+                  <li><code>JD</code><span class="metric-cn-label">术语密度</span></li>
                 </ul>
                 <span class="formula">ELI = mental + effort − performance</span>
               </td>
               <td>
                 <ul>
-                  <li><code>Persona-Granularity Score</code> (PGS)</li>
-                  <li><code>Structural Symmetry</code> (SYM)</li>
-                  <li><code>ROUGE-L</code> vs 参考大纲</li>
+                  <li><code>PGS</code><span class="metric-cn-label">画像粒度匹配分</span></li>
+                  <li><code>SYM</code><span class="metric-cn-label">结构对称度</span></li>
+                  <li><code>ROUGE-L</code><span class="metric-cn-label">最长公共子序列相似度</span></li>
                 </ul>
                 <span class="formula">SYM ∈ [0,1] outline parity</span>
               </td>
               <td>
                 <ul>
-                  <li><code>Stack Leakage Index</code> (SLI)</li>
-                  <li><code>Device Consistency Rate</code> (DCR)</li>
-                  <li><code>Static Analysis Pass Rate</code></li>
+                  <li><code>SLI</code><span class="metric-cn-label">栈泄漏指数</span></li>
+                  <li><code>DCR</code><span class="metric-cn-label">设备一致性率</span></li>
+                  <li><code>SAPR</code><span class="metric-cn-label">静态分析通过率</span></li>
                 </ul>
                 <span class="formula">SLI = cuda_only_tokens / code_tokens</span>
               </td>
               <td>
                 <ul>
-                  <li><code class="core-metric" data-tip="Code Snippet Conciseness = 参考最简实现 LoC / 回答代码 LoC。同功能下比值 ≥1 表示足够简洁，环节 5–6 必评。">CSC</code> Code Conciseness <em style="font-size:.65rem;color:var(--muted)">必报*</em></li>
-                  <li><code>LoC</code> / 等价 LoC 比</li>
-                  <li><code>McCabe CC</code> 圈复杂度</li>
-                  <li><code>Token Efficiency</code></li>
+                  <li><code class="core-metric" data-tip="Code Snippet Conciseness = 参考最简实现 LoC / 回答代码 LoC。同功能下比值 ≥1 表示足够简洁，环节 5–6 必评。">CSC</code><span class="metric-cn-label">代码简洁系数</span> <em style="font-size:.65rem;color:var(--muted)">必报*</em></li>
+                  <li><code>LoC</code><span class="metric-cn-label">代码行数</span></li>
+                  <li><code>CC</code><span class="metric-cn-label">圈复杂度</span></li>
+                  <li><code>Token Eff.</code><span class="metric-cn-label">Token 效率</span></li>
                 </ul>
                 <span class="formula">CSC = LoC<sub>ref</sub>/LoC<sub>ans</sub><br>*环节 5–6 必评；无代码则 N/A</span>
               </td>
               <td>
                 <ul>
-                  <li><code class="core-metric" data-tip="代码块复制到 sandbox 一次试跑的成功率（HumanEval 范式）。衡量输出能否少改即跑，含代码环节建议必报。">pass@1</code> <em style="font-size:.65rem;color:var(--muted)">必报*</em></li>
-                  <li><code>WCR</code> Workflow Completion</li>
-                  <li><code>SCR</code> Step Coverage</li>
+                  <li><code class="core-metric" data-tip="代码块复制到 sandbox 一次试跑的成功率（HumanEval 范式）。衡量输出能否少改即跑，含代码环节建议必报。">pass@1</code><span class="metric-cn-label">一次试跑成功率</span> <em style="font-size:.65rem;color:var(--muted)">必报*</em></li>
+                  <li><code>WCR</code><span class="metric-cn-label">工作流完成率</span></li>
+                  <li><code>SCR</code><span class="metric-cn-label">步骤覆盖率</span></li>
                 </ul>
                 <span class="formula">pass@1 = #run_ok / #blocks</span>
               </td>
               <td>
                 <ul>
-                  <li><code class="core-metric" data-tip="Time-to-First-Decision = 决策句首次出现的 token 位置 / 全文 token 数。越小表示越早给出「自研/组合/等」结论，≤0.25 为优。">TTFD</code> Time-to-First-Decision <em style="font-size:.65rem;color:var(--muted)">必报</em></li>
-                  <li><code>TTFR</code> 首 token 延迟</li>
-                  <li><code>RedRate</code>（信息等价时）</li>
+                  <li><code class="core-metric" data-tip="Time-to-First-Decision = 决策句首次出现的 token 位置 / 全文 token 数。越小表示越早给出「自研/组合/等」结论，≤0.25 为优。">TTFD</code><span class="metric-cn-label">决策句前置度</span> <em style="font-size:.65rem;color:var(--muted)">必报</em></li>
+                  <li><code>TTFR</code><span class="metric-cn-label">首响耗时</span></li>
+                  <li><code>RedRate</code><span class="metric-cn-label">冗余率</span>（信息等价时）</li>
                 </ul>
                 <span class="formula">TTFD ≤ 0.25 为优（前 25% 给决策）</span>
               </td>
             </tr>
             <tr class="compare-row">
               <th>对照<br>Δ 指标</th>
-              <td><code>ΔTLX</code>、<code>ΔJD</code>：CANN 概念断层是否提高负荷。</td>
-              <td><code>ΔSYM</code>、<code>ΔPGS</code>：配对结构是否同构可比。</td>
-              <td><code>ΔSLI</code>、<code>ΔDCR</code></td>
-              <td><code class="core-metric" data-tip="配对差值：代码简洁性 CANN−CUDA。负值表示 CANN 生成代码更冗长。">ΔCSC</code> 必报*；<code>ΔCC</code> 可选。</td>
-              <td><code class="core-metric" data-tip="配对差值：一次试跑通过率 CANN−CUDA。负值表示 CANN 侧代码更难直接运行。">Δpass@1</code> 必报*；<code>ΔWCR</code>、<code>ΔSCR</code> 可选。</td>
-              <td><code class="core-metric" data-tip="配对差值：决策前置程度 CANN−CUDA。正值表示 CANN 更晚才给出可停止结论。">ΔTTFD</code> 必报；<code>ΔTTFR</code> 可选。</td>
+              <td><code>ΔTLX</code><span class="metric-cn-label">Δ认知负荷</span>、<code>ΔJD</code><span class="metric-cn-label">Δ术语密度</span>：CANN 概念断层是否提高负荷。</td>
+              <td><code>ΔSYM</code><span class="metric-cn-label">Δ结构对称度</span>、<code>ΔPGS</code><span class="metric-cn-label">Δ画像粒度匹配</span>：配对结构是否同构可比。</td>
+              <td><code>ΔSLI</code><span class="metric-cn-label">Δ栈泄漏指数</span>、<code>ΔDCR</code><span class="metric-cn-label">Δ设备一致性</span></td>
+              <td><code class="core-metric" data-tip="配对差值：代码简洁性 CANN−CUDA。负值表示 CANN 生成代码更冗长。">ΔCSC</code><span class="metric-cn-label">Δ代码简洁系数</span> 必报*；<code>ΔCC</code><span class="metric-cn-label">Δ圈复杂度</span> 可选。</td>
+              <td><code class="core-metric" data-tip="配对差值：一次试跑通过率 CANN−CUDA。负值表示 CANN 侧代码更难直接运行。">Δpass@1</code><span class="metric-cn-label">Δ一次试跑成功率</span> 必报*；<code>ΔWCR</code><span class="metric-cn-label">Δ工作流完成率</span>、<code>ΔSCR</code><span class="metric-cn-label">Δ步骤覆盖率</span> 可选。</td>
+              <td><code class="core-metric" data-tip="配对差值：决策前置程度 CANN−CUDA。正值表示 CANN 更晚才给出可停止结论。">ΔTTFD</code><span class="metric-cn-label">Δ决策句前置度</span> 必报；<code>ΔTTFR</code><span class="metric-cn-label">Δ首响耗时</span> 可选。</td>
             </tr>
             <tr>
               <th>度量<br>协议</th>

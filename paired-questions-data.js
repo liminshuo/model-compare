@@ -46,7 +46,7 @@ const JOURNEY_CATS = [
   ]}
 ];
 
-const PAIRED_BASE = { novice: {}, expert: {} };
+const PAIRED_BASE = { novice: {} };
 const ALL_TASK_KEYS = JOURNEY_CATS.flatMap(c => c.tasks.map(t => t.k));
 
 function setPairs(level, key, pairs) {
@@ -431,94 +431,6 @@ setPairs('novice', 'Z', [
     '给出 CUDA 生态到 CANN 生态的组件对照表？')
 ]);
 
-// —— 专业用户：简洁平行提问（同一动作、同一目的，便于后续展开体验对比）——
-const EXPERT_PRIMARY = {
-  I: pair('版本兼容', '确认全栈组件版本匹配',
-    '如何查 CUDA、驱动、cuDNN、PyTorch 的版本兼容关系？',
-    '如何查 CANN、驱动、固件、torch_npu 的版本兼容关系？'),
-  J: pair('环境配置', '完成安装并配置环境变量',
-    'CUDA Toolkit 安装后 PATH/LD_LIBRARY_PATH 怎么配才不影响已有环境？',
-    'CANN 安装后 set_env.sh / ASCEND 环境变量怎么配才不影响已有环境？'),
-  K: pair('容器部署', '用容器跑通加速环境',
-    '生产环境如何用 Docker + GPU 跑通 PyTorch 训练？关键配置有哪些？',
-    '生产环境如何用 Docker + Ascend 跑通 torch_npu 训练？关键配置有哪些？'),
-  D: pair('算子接入', '将自研算子接入训练流程',
-    '自定义 CUDA 算子如何注册到 PyTorch 并在训练中调用？',
-    '自定义 Ascend C 算子如何注册到 torch_npu 并在训练中调用？'),
-  L: pair('精度验证', '验证自定义算子输出正确',
-    '自定义 CUDA 算子如何与 PyTorch 原生实现对比精度？',
-    '自定义 CANN 算子如何与 CPU/PyTorch 参考实现对比精度？'),
-  M: pair('动态 shape', '让算子支持可变输入尺寸',
-    'CUDA 算子如何支持动态 batch/shape？关键改动在哪？',
-    'Ascend C 算子如何支持动态 batch/shape？Tiling 要怎么配？'),
-  N: pair('算子融合', '开启算子融合加速',
-    'PyTorch/CUDA 训练中如何开启算子融合？怎么确认已生效？',
-    'torch_npu 训练中如何开启图融合/算子融合？怎么确认已生效？'),
-  O: pair('算子注册', '算子接入框架并用于推理',
-    '自定义 CUDA 算子如何注册并用于 ONNX/TensorRT 推理？',
-    '自定义 CANN 算子如何注册并用于 OM 推理？'),
-  C: pair('算子选型', '判断用内置算子还是自研',
-    '模型里某个算子慢，如何判断该用 cuDNN 内置还是自研 CUDA？',
-    '模型里某个算子慢，如何判断该用 CANN 内置还是自研 Ascend C？'),
-  F: pair('分布式训练', '配置多卡训练',
-    'PyTorch 多卡训练 DDP 怎么配？NCCL 环境要检查什么？',
-    'torch_npu 多卡训练 DDP 怎么配？HCCL 环境要检查什么？'),
-  P: pair('混合精度', '开启混合精度训练',
-    'GPU 训练如何开 AMP 混合精度？loss scale 怎么调？',
-    'NPU 训练如何开混合精度？与 GPU 侧有何不同？'),
-  Q: pair('显存优化', '解决训练显存不足',
-    'GPU 训练 OOM 时，gradient checkpointing 和 accumulation 怎么用？',
-    'NPU 训练 OOM 时，gradient checkpointing 和 accumulation 怎么用？'),
-  R: pair('训练异常', '排查 loss 不下降或精度差',
-    'GPU 训练 loss 异常，按什么顺序排查？',
-    'NPU 训练 loss 异常，按什么顺序排查？'),
-  A: pair('模型导出', '导出为推理格式',
-    'PyTorch 模型如何导出 ONNX 并转成 TensorRT 用于推理？',
-    'PyTorch 模型如何导出并转成 OM 用于推理？'),
-  S: pair('推理部署', '部署为在线推理服务',
-    'GPU 模型如何用 Triton 或 FastAPI 部署为推理服务？',
-    'NPU 模型如何用 ACL/MindIE 部署为推理服务？'),
-  H: pair('模型量化', '量化压缩推理模型',
-    'GPU 推理如何做 INT8 量化？校准数据集怎么准备？',
-    'NPU 推理如何做 INT8 量化？msmodelslim 流程是什么？'),
-  T: pair('动态推理', '推理支持可变 batch',
-    'TensorRT 如何配置 dynamic batch 推理？',
-    'ATC/ACL 如何配置 dynamic batch 推理？'),
-  B: pair('性能分析', '定位训练/推理瓶颈',
-    'GPU 训练慢，如何用 PyTorch Profiler 或 nsys 找瓶颈？',
-    'NPU 训练慢，如何用 msprof 或框架 Profiler 找瓶颈？'),
-  U: pair('访存优化', '优化 kernel 内存访问',
-    'CUDA kernel 被判定 memory bound 后，常用优化手段有哪些？',
-    'Ascend C 算子被判定 memory bound 后，常用优化手段有哪些？'),
-  V: pair('拷贝重叠', '减少数据拷贝等待',
-    '如何用 cudaMemcpyAsync 和 stream 让拷贝与计算重叠？',
-    '如何用 aclrtMemcpyAsync 和 stream 让拷贝与计算重叠？'),
-  W: pair('通信调优', '优化多卡通信性能',
-    'NCCL allreduce 慢，常见原因和调优手段有哪些？',
-    'HCCL allreduce 慢，常见原因和调优手段有哪些？'),
-  X: pair('内存越界', '定位非法内存访问',
-    'CUDA illegal memory access 如何用 compute-sanitizer 定位？',
-    'NPU 内存访问异常如何用 msSanitizer 或 plog 定位？'),
-  E: pair('报错排查', '根据错误码定位问题',
-    'CUDA/NCCL 报错后，如何查错误码含义并定位根因？',
-    'ACL/HCCL/plog 报错后，如何查错误码含义并定位根因？'),
-  G: pair('平台迁移', '把 CUDA 项目迁到昇腾',
-    '已有 PyTorch CUDA 项目，迁到 Ascend 第一步改什么？',
-    '已有 PyTorch CUDA 项目，用 torch_npu 迁移要改哪些代码？'),
-  Y: pair('跨芯片', '换芯片后重新编译部署',
-    'CUDA 程序换 GPU 型号后要重新编译吗？注意什么？',
-    'OM/算子换 Ascend 芯片型号（如 910A→910B）后要重做哪些步骤？'),
-  Z: pair('概念对照', '理解两套平台的差异',
-    'CUDA 的 thread/block/grid 概念，在 Ascend 里对应什么？',
-    'CUDA 的 cuBLAS/TensorRT/NCCL，在 CANN 里各对应什么？')
-};
-
-for (const key of ALL_TASK_KEYS) {
-  PAIRED_BASE.expert[key] = EXPERT_PRIMARY[key]
-    ? [EXPERT_PRIMARY[key]]
-    : PAIRED_BASE.novice[key].slice(0, 1);
-}
-
 const ROLE_LENS = {
   app: { cuda: '', cann: '' },
   migrate: { cuda: '【迁移源】', cann: '【迁移目标】' },
@@ -536,8 +448,8 @@ function adaptForRole(pairs, role) {
   }));
 }
 
-function getPairedQuestions(role, level, taskKey) {
-  const base = PAIRED_BASE[level][taskKey];
+function getPairedQuestions(role, taskKey) {
+  const base = PAIRED_BASE.novice[taskKey];
   if (!base) return [];
   return adaptForRole(base, role).slice(0, 1);
 }

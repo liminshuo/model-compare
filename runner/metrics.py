@@ -166,26 +166,74 @@ def score_osr(rec: dict) -> dict:
     }
 
 
-def score_hal_rate(rec: dict) -> dict:
-    stack = _stack(rec)
+def score_ver_acc(rec: dict) -> dict:
+    """Version Accuracy：回答中版本/配套陈述与检索到的官方页是否一致。"""
     text = _reply_text(rec)
-    claims = []
-    if stack == "CANN":
-        if re.search(r"通常已映射|一般支持|通常", text):
-            claims.append(("soft_claim", "「通常已映射」缺逐条清单引用"))
-        if "torch_npu" not in text.lower() and "npu" not in text.lower():
-            claims.append(("missing_entity", "未明确 torch_npu 实体"))
-    if stack == "CUDA":
-        if "Claude" in text:
-            claims.append(("meta", "引用 Claude 非事实源（不计致命）"))
-    # 可核查陈述数（简化）
-    total = max(3, len(re.findall(r"[。.\n]|•", text)) + 1)
-    hal = len([c for c in claims if c[0] != "meta"])
-    val = hal / total if total else 0
+    prompt = rec.get("prompt", "")
+    requires_version = "版本" in prompt
+
+    def _gold_versions() -> set[str]:
+        found: set[str] = set()
+        for step in rec.get("steps", []):
+            blob = " ".join(
+                filter(
+                    None,
+                    [
+                        step.get("final_url") or "",
+                        step.get("url") or "",
+                        step.get("title") or "",
+                        step.get("snippet") or "",
+                    ],
+                )
+            )
+            if "60RC1" in blob or "6.0.RC1" in blob:
+                found.add("6.0.RC1")
+            if "7.0.0" in blob or "商用版7.0" in blob:
+                found.add("7.0.0")
+            if "2.12" in blob:
+                found.add("2.12")
+            for m in re.finditer(r"\d+\.\d+(?:\.\d+)?(?:\.RC\d+)?", blob):
+                found.add(m.group(0))
+        return found
+
+    claims = re.findall(
+        r"\d+\.\d+(?:\.\d+)?(?:\.RC\d+)?|CANN\s*[\d.]+|PyTorch\s*[\d.]+|6\.0\.?RC\d",
+        text,
+        re.I,
+    )
+    gold = _gold_versions()
+
+    if requires_version and not claims:
+        return {
+            "value": 0.0,
+            "detail": "任务要求注明版本但未给出可核查版本陈述",
+            "auto": "semi",
+        }
+
+    if not claims:
+        return {
+            "value": 1.0,
+            "detail": "无版本陈述且无错误版本（或未要求版本）",
+            "auto": "semi",
+        }
+
+    def _claim_ok(claim: str) -> bool:
+        c = re.sub(r"\s+", "", claim.lower())
+        for g in gold:
+            gn = re.sub(r"\s+", "", g.lower())
+            if gn in c or c in gn:
+                return True
+        nums = re.findall(r"\d+\.\d+", claim)
+        return any(any(n in g for g in gold) for n in nums)
+
+    correct = sum(1 for c in claims if _claim_ok(c))
+    val = correct / len(claims)
+    wrong = [c for c in claims if not _claim_ok(c)]
     return {
         "value": round(val, 3),
-        "detail": "；".join(c[1] for c in claims) or "未发现明显幻觉",
-        "auto": "manual",
+        "detail": f"版本陈述 {correct}/{len(claims)} 与检索页一致"
+        + (f"；未对齐：{', '.join(wrong)}" if wrong else ""),
+        "auto": "semi",
     }
 
 
@@ -269,7 +317,7 @@ METRIC_ORDER = [
     ("NPL", score_npl),
     ("TTC", score_ttc),
     ("OSR", score_osr),
-    ("HalRate", score_hal_rate),
+    ("VerAcc", score_ver_acc),
     ("Cov@checklist", score_cov_checklist),
     ("pass@1", score_pass_at_1),
     ("TTFD", score_ttfd),
@@ -282,7 +330,7 @@ METRIC_META = {
     "NPL": {"module": "路径效率", "layer": "执行层", "layer_key": "exec"},
     "TTC": {"module": "多轮收敛", "layer": "执行层", "layer_key": "exec"},
     "OSR": {"module": "官方信息占比", "layer": "内容层", "layer_key": "content"},
-    "HalRate": {"module": "信息时效性与 API 幻觉", "layer": "内容层", "layer_key": "content"},
+    "VerAcc": {"module": "信息时效性与 API 幻觉", "layer": "内容层", "layer_key": "content"},
     "Cov@checklist": {"module": "知识覆盖率", "layer": "内容层", "layer_key": "content"},
     "pass@1": {"module": "可执行性与完整性", "layer": "输出层", "layer_key": "output"},
     "TTFD": {"module": "快速给答", "layer": "输出层", "layer_key": "output"},
@@ -311,8 +359,8 @@ def score_pair(cuda_id: str, cann_id: str) -> dict:
         n = cann_scores[name]
         delta = None
         if c.get("value") is not None and n.get("value") is not None and not c.get("na") and not n.get("na"):
-            # HalRate / NPL / TTC / TTFD：越低越好或 contextual
-            if name in ("HalRate", "NPL", "TTFD"):
+            # NPL / TTC / TTFD：越低越好或 contextual
+            if name in ("NPL", "TTFD"):
                 delta = round(n["value"] - c["value"], 3)
             elif name == "TTC":
                 delta = round(n["value"] - c["value"], 2)

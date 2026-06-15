@@ -192,14 +192,14 @@
 
   <script>
     const LAYER_LABELS = { exec: '执行层', content: '内容层', output: '输出层' };
-    const LOWER_BETTER = new Set(['NPL', 'TTC', 'HalRate', 'TTFD']);
+    const LOWER_BETTER = new Set(['NPL', 'TTC', 'TTFD']);
     const METRIC_MEANINGS = {
       'Recall@k': '前 k 次检索/引用中，命中环节 Gold 文档集的比例；衡量是否找全官方依据。',
       'MRR': '首个相关 Gold 文档排名的倒数；衡量检索是否尽早找到官方文档。',
       'NPL': '有效步骤数相对专家最短路径的归一化长度；衡量路径是否冗余。',
       'TTC': '从提问到出现可停止结论的时间（秒）或对话轮次。',
       'OSR': '引用中来自该栈官方一手源的比例；错引他栈源会降低分。',
-      'HalRate': '编造或不可验证的 API、版本等占全部可核查陈述的比例。',
+      'VerAcc': '回答中版本号、配套关系与官方 release / 检索页一致的比例；漏写版本要求会降低分。',
       'Cov@checklist': '回答覆盖环节栈特有检查项（如 torch_npu 清单、CANN 配套）的比例。',
       'pass@1': '代码块复制到 sandbox 一次试跑是否成功；衡量能否少改即跑。',
       'TTFD': '决策句（自研/组合/等）首次出现位置占全文比例；越小越早给结论。',
@@ -211,7 +211,7 @@
       if (s.na || s.value == null) return { text: 'N/A', cls: 'na' };
       const unit = s.unit || '';
       if (m.metric === 'TTC') return { text: s.value + unit, cls: '' };
-      if (m.metric === 'HalRate' || m.metric === 'TTFD' || (s.value <= 1 && s.value >= 0))
+      if (m.metric === 'TTFD' || (s.value <= 1 && s.value >= 0))
         return { text: (s.value * (m.metric === 'TTC' ? 1 : (m.metric === 'TTC' ? 1 : 1))).toFixed(3), cls: '' };
       return { text: String(s.value), cls: '' };
     }
@@ -265,7 +265,7 @@
         'CUDA 跨 4 页 PyTorch 官方文档检索全部成功，Recall@k=1.0、OSR=100%，结论明确「不必自研」。',
         'CANN 首检 Gitee 405，MRR 低于 CUDA；仅 2/3 URL 为 hiascend 官方域（OSR≈0.67）。',
         'CANN TTC≈2.4s、NPL=1.5，路径更短；CUDA TTC≈19.9s、NPL=2.0，深度检索换质量。',
-        'CANN 回复含「通常已映射」等软断言，HalRate 略高于 CUDA（需人工复核）。',
+        'CANN 任务要求注明版本但回复未给出可核查版本陈述，VerAcc=0（CUDA 无版本要求记 1.0）。',
         '两端 Cov@checklist 均覆盖环节 1 决策清单；均无代码块，pass@1 / CSC 记 N/A。'
       ];
       document.getElementById('insight-list').innerHTML = items.map(t => `<li>${t}</li>`).join('');
@@ -274,7 +274,7 @@
     function renderBar(m, side) {
       if (m.cuda.na || m.cann.na) return '';
       if (m.metric === 'TTC') return '';
-      if (!['Recall@k','MRR','OSR','Cov@checklist','HalRate','TTFD','NPL'].includes(m.metric)) return '';
+      if (!['Recall@k','MRR','OSR','VerAcc','Cov@checklist','TTFD','NPL'].includes(m.metric)) return '';
       const s = m[side];
       const v = Math.min(Number(s.value) || 0, 1);
       const barCls = side === 'cuda' ? 'bar-cuda' : 'bar-cann';

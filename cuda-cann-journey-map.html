@@ -34,7 +34,63 @@
     }
     header h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: .5rem; }
     header p { opacity: .85; max-width: 900px; font-size: .95rem; }
-    .container { max-width: 1280px; margin: 0 auto; padding: 1.5rem; }
+    .container { max-width: 1480px; margin: 0 auto; padding: 1.5rem; }
+    .page-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 1.25rem;
+      align-items: start;
+    }
+    @media (max-width: 1100px) {
+      .page-layout { grid-template-columns: 1fr; }
+      .toc-sidebar { position: static !important; max-height: none !important; }
+    }
+    .toc-sidebar {
+      position: sticky;
+      top: 1rem;
+      max-height: calc(100vh - 2rem);
+      overflow-y: auto;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      font-size: .78rem;
+    }
+    .toc-sidebar .toc-head {
+      padding: 0;
+      border-bottom: 1px solid var(--border);
+      background: #fafbfe;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    .toc-tabs { display: flex; }
+    .toc-tab {
+      flex: 1; border: none; background: transparent;
+      padding: .65rem .35rem; font-size: .62rem; font-weight: 600;
+      color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent;
+    }
+    .toc-tab:hover { color: var(--accent); }
+    .toc-tab.active { color: var(--accent); border-bottom-color: var(--accent); background: #fff; }
+    .toc-body { padding: .85rem 1rem 1rem; line-height: 1.55; color: var(--text); }
+    .toc-body h2 { font-size: .92rem; margin: 0 0 .65rem; color: var(--accent); }
+    .toc-body h3 { font-size: .82rem; margin: .85rem 0 .35rem; color: var(--text); }
+    .toc-body h4 { font-size: .76rem; margin: .65rem 0 .25rem; color: var(--muted); font-weight: 700; }
+    .toc-body h5 { font-size: .72rem; margin: .45rem 0 .2rem; color: #6b7280; font-weight: 600; }
+    .toc-body { overflow-x: auto; }
+    .toc-body table { width: 100%; border-collapse: collapse; font-size: .68rem; margin: .35rem 0 .65rem; min-width: 720px; }
+    .toc-body th, .toc-body td { border: 1px solid var(--border); padding: .3rem .4rem; text-align: left; }
+    .toc-body th { background: #f3f4f6; }
+    .toc-body p { margin: .35rem 0; color: var(--muted); font-size: .74rem; }
+    .toc-body ul { padding-left: 1rem; margin: .25rem 0 .5rem; }
+    .toc-body li { margin-bottom: .2rem; }
+    .toc-body hr { border: none; border-top: 1px dashed var(--border); margin: .75rem 0; }
+    .toc-body a { color: var(--accent); }
+    .toc-body blockquote {
+      margin: 0 0 .65rem; padding: .35rem .55rem;
+      border-left: 3px solid var(--accent); background: var(--accent-light);
+      font-size: .72rem; color: var(--muted);
+    }
     .controls {
       display: flex; flex-wrap: wrap; gap: 1.25rem;
       background: var(--card); border-radius: var(--radius);
@@ -70,11 +126,6 @@
     }
     .role-card h2 { font-size: 1.1rem; margin-bottom: .25rem; }
     .role-card p { font-size: .875rem; color: var(--muted); }
-    .controls-nested {
-      width: 100%; padding-top: .75rem; margin-top: .75rem;
-      border-top: 1px dashed var(--border);
-    }
-    .controls-nested .control-group { margin-bottom: 0; }
     .journey-wrap {
       background: var(--card); border-radius: var(--radius);
       border: 1px solid var(--border); box-shadow: var(--shadow);
@@ -105,6 +156,16 @@
       position: sticky; left: 96px; z-index: 2;
       box-shadow: 2px 0 6px rgba(26,29,38,.06);
     }
+    .journey-table .role-head {
+      background: #f3f4f6; font-size: .72rem; font-weight: 700;
+      padding: .55rem .45rem; text-align: center;
+      color: var(--text); min-width: 160px;
+    }
+    .journey-table .role-matrix-col { min-width: 160px; vertical-align: top; }
+    .journey-table .role-matrix-col .pair-block { margin-bottom: .35rem; }
+    .journey-table .role-matrix-col .pair-cols { grid-template-columns: 1fr; }
+    .journey-table .role-matrix-col .pair-col.cuda { border-right: none; border-bottom: 1px solid var(--border); }
+    .controls-stack { display: flex; flex-direction: column; gap: 1rem; width: 100%; }
     .journey-table .content-col { width: auto; }
     .cell-body { padding: .5rem; min-height: 80px; background: #fff; cursor: pointer; }
     .cell-body:hover { background: #fafbfe; }
@@ -185,22 +246,23 @@
 
   <div class="container">
     <div class="controls">
-      <div class="control-group" style="width:100%;">
-        <label>用户角色</label>
-        <div class="btn-group" id="roleBtns"></div>
-        <div class="controls-nested">
-          <div class="control-group">
-            <label id="levelLabel">用户经验 · 应用开发者</label>
-            <div class="btn-group" id="levelBtns"></div>
-          </div>
+      <div class="controls-stack">
+        <div class="control-group" style="width:100%;">
+          <label>用户旅程</label>
+          <div class="btn-group" id="journeyBtns"></div>
+        </div>
+        <div class="control-group" id="roleGroup" style="width:100%;">
+          <label>用户角色</label>
+          <div class="btn-group" id="roleBtns"></div>
         </div>
       </div>
     </div>
 
-    <div class="legend">
+    <div class="legend" id="legend">
       <span><i class="dot cuda"></i> CUDA（NVIDIA 生态）</span>
       <span><i class="dot cann"></i> CANN（华为 Ascend 生态）</span>
       <span>左侧：7 个 L1 工作流阶段 · 26 个 L2 任务（对齐 opknow 热力矩阵）</span>
+      <span id="legendMode">当前视图：按工作流阶段 · 选定角色下的任务矩阵</span>
       <span>每组提问：相同场景 + 相同目的，CUDA/CANN 平行对比</span>
     </div>
 
@@ -208,9 +270,25 @@
       <h2>加载中…</h2>
       <p>正在初始化旅程数据</p>
     </div>
-    <div class="journey-wrap" id="journey"><p style="padding:2rem;text-align:center;color:var(--muted);">旅程表加载中…</p></div>
-    <div class="cell-detail" id="cellDetail"></div>
-    <div class="insight-box" id="insights"><p style="color:var(--muted);">洞察加载中…</p></div>
+
+    <div class="page-layout">
+      <div class="main-col">
+        <div class="journey-wrap" id="journey"><p style="padding:2rem;text-align:center;color:var(--muted);">旅程表加载中…</p></div>
+        <div class="cell-detail" id="cellDetail"></div>
+        <div class="insight-box" id="insights"><p style="color:var(--muted);">洞察加载中…</p></div>
+      </div>
+      <aside class="toc-sidebar">
+        <div class="toc-head">
+          <div class="toc-tabs">
+            <button type="button" class="toc-tab active" data-doc="journey-taxonomy.md">旅程分类</button>
+            <button type="button" class="toc-tab" data-doc="gold-set-metrics.md">Gold Set</button>
+            <button type="button" class="toc-tab" data-doc="seven-easy-kei.md">7易 KEI</button>
+            <button type="button" class="toc-tab" data-doc="touchpoint-metrics.md">触点指标</button>
+          </div>
+        </div>
+        <div class="toc-body" id="taxonomyMd">加载目录…</div>
+      </aside>
+    </div>
   </div>
 
   <footer>CUDA vs CANN 开发者旅程地图 · 大模型辅助体验研究框架</footer>
@@ -218,34 +296,58 @@
   <script src="paired-questions-data.js"></script>
   <script>
     const ROLES = {
-      app: { name: "应用开发者", desc: "聚焦业务模型落地，以 PyTorch/TensorFlow 高层 API 为主，较少手写底层算子。" },
-      migrate: { name: "模型/框架迁移工程师", desc: "负责将 CUDA/NVIDIA 栈上的模型与训练流程迁移至 Ascend/CANN，关注 API 映射与精度对齐。" },
+      app: { name: "应用开发者", desc: "聚焦业务模型落地与推理部署：安装配置、算子选型、量化、推理服务、动态 batch、报错排查与平台概念对照。" },
+      migrate: { name: "模型/框架迁移工程师", desc: "聚焦模型导出转换、CUDA→昇腾迁移、跨芯片适配，以及训练侧分布式/混合精度/显存与精度排查、环境版本与容器部署。" },
       op: { name: "算子开发者", desc: "编写自定义 Kernel/算子，处理算子注册、精度验证与框架集成。" },
       sys: { name: "系统调优/生态贡献者", desc: "做 Profiling、性能调优、贡献社区算子或工具，关注端到端效率与生态建设。" }
     };
 
-    const LEVELS = {
-      novice: { name: "新手用户", desc: "首次接触目标平台，需要概念解释、步骤指引与错误兜底。" },
-      expert: { name: "专业用户", desc: "有跨平台或同类经验，需要深度 API、边界案例与性能/精度权衡建议。" }
+    const JOURNEY_MODES = {
+      workflow: { name: '按工作流阶段', desc: '以工作流任务为行、四角色为列，横向对照同一任务下不同角色的 CUDA/CANN 配对提问，无需选择角色。' },
+      role: { name: '按开发者角色', desc: '选定一个开发者角色，纵向浏览其在各工作流任务下的 CUDA/CANN 配对提问。' }
     };
+
+    const ROLE_TASK_KEYS = {
+      app: ['S', 'T', 'C', 'H', 'E', 'J', 'Z'],
+      // app: S 推理服务 · T 动态 batch · C 算子库选型 · H 量化 · E 报错排查 · J 安装 · Z 概念对照
+      migrate: ['A', 'G', 'Y', 'O', 'F', 'P', 'Q', 'R', 'I', 'K']
+      // migrate: A 模型转换/导出 · G CUDA→昇腾 · Y 跨芯片 · O 注册集成
+      // F 分布式 · P 混合精度 · Q 显存/OOM · R 精度收敛 · I 版本兼容 · K 容器镜像
+    };
+
+    const NOVICE = { name: "新手用户", desc: "首次接触目标平台，需要概念解释、步骤指引与错误兜底。" };
 
     const DATA = {};
 
     function buildData() {
       for (const role of Object.keys(ROLES)) {
-        DATA[role] = { novice: [], expert: [] };
-        for (const level of ["novice", "expert"]) {
-          DATA[role][level] = JOURNEY_CATS.map(cat => ({
-            l1: cat.name,
-            short: cat.short,
-            l2: cat.tasks.map(task => ({
-              key: task.k,
-              name: task.t,
-              pairs: getPairedQuestions(role, level, task.k)
-            }))
-          }));
-        }
+        DATA[role] = JOURNEY_CATS.map(cat => ({
+          l1: cat.name,
+          short: cat.short,
+          l2: cat.tasks.map(task => ({
+            key: task.k,
+            name: task.t,
+            pairs: getPairedQuestions(role, task.k)
+          }))
+        }));
       }
+    }
+
+    function getVisibleTaskKeys() {
+      if (currentJourney === 'role') {
+        const keys = ROLE_TASK_KEYS[currentRole];
+        return keys ? new Set(keys) : null;
+      }
+      const union = Object.values(ROLE_TASK_KEYS).flat();
+      return union.length ? new Set(union) : null;
+    }
+
+    function filterTaskTree(data) {
+      const keySet = getVisibleTaskKeys();
+      if (!keySet) return data;
+      return data
+        .map(l1 => ({ ...l1, l2: l1.l2.filter(t => keySet.has(t.key)) }))
+        .filter(l1 => l1.l2.length > 0);
     }
 
     function renderPairBlock(p, idx, compact) {
@@ -261,37 +363,36 @@
     }
 
     const INSIGHTS = {
-      app: {
-        novice: ["每组提问已按「相同场景+相同目的」配对，可直接横向对比 CUDA vs CANN 完成任务所需的步骤数、文档质量、报错清晰度。", "新手在 CANN 侧「环境安装」环节通常比 CUDA 多 1-2 个概念断层（驱动/Toolkit/框架三角）。", "对比时记录：大模型回答是否给出等价路径，还是 CANN 侧需要额外绕行。"],
-        expert: ["专业用户配对问题聚焦生产约束，适合评估 CANN 在生产级场景的成熟度差距。", "重点对比：边界行为文档完整性、版本矩阵可得性、调试工具链深度。", "建议在每阶段记录「体验摩擦点」：信息获取、试错次数、社区案例可得性。"]
-      },
-      migrate: {
-        novice: ["迁移工程师应逐场景对比：同一目的下 CUDA 侧几步完成 vs CANN 侧几步完成。", "L1 迁移阶段配对问题直接支持「源→目标」双路径 diff 分析。", "记录 CANN 侧哪些场景缺少等价工具（如算子扫描、精度对比脚本）。"],
-        expert: ["专业迁移用户关注自动化与验收标准，配对问题可量化迁移闭环完整性。", "对比维度：API 映射覆盖率、权重迁移损耗、benchmark 可复现性。", "CANN 侧 ATC/OM 链路与 CUDA TensorRT 链路的步骤对称性是重点。"]
-      },
-      op: {
-        novice: ["算子开发配对问题对齐了 Hello World→注册→测试 的相同里程碑。", "对比 CUDA 与 CANN 在算子模板、编译工具链、精度验证流程上的步数差异。", "CANN 侧 TBE vs Ascend C 选型在相同场景下是否增加认知负担。"],
-        expert: ["专业算子开发者配对问题覆盖指令级优化，适合评估 CANN 优化空间文档是否充分。", "对比：profiling 到优化手段的闭环是否对称。", "关注 CANN 算子社区合入流程 vs CUDA 生态的成熟度差。"]
-      },
-      sys: {
-        novice: ["系统调优配对问题从 profiling 入门到端到端优化，场景一一对齐。", "CUDA 侧 nsys/ncu 成熟 vs CANN 侧 msprof 学习曲线——直接对比工具可得性。", "记录相同场景下定位瓶颈所需的工具切换次数。"],
-        expert: ["专业调优者配对问题支持 benchmark 方法论与 CI 回归的闭环对比。", "评估 CANN 侧性能基线维护、跨版本回归工具是否对称。", "CANN 文档碎片化程度可通过「同场景找答案耗时」量化。"]
-      }
+      app: ["每组提问已按「相同场景+相同目的」配对，可直接横向对比 CUDA vs CANN 完成任务所需的步骤数、文档质量、报错清晰度。", "新手在 CANN 侧「环境安装」环节通常比 CUDA 多 1-2 个概念断层（驱动/Toolkit/框架三角）。", "对比时记录：大模型回答是否给出等价路径，还是 CANN 侧需要额外绕行。"],
+      migrate: ["迁移工程师应逐场景对比：同一目的下 CUDA 侧几步完成 vs CANN 侧几步完成。", "L1 迁移阶段配对问题直接支持「源→目标」双路径 diff 分析。", "记录 CANN 侧哪些场景缺少等价工具（如算子扫描、精度对比脚本）。"],
+      op: ["算子开发配对问题对齐了 Hello World→注册→测试 的相同里程碑。", "对比 CUDA 与 CANN 在算子模板、编译工具链、精度验证流程上的步数差异。", "CANN 侧 TBE vs Ascend C 选型在相同场景下是否增加认知负担。"],
+      sys: ["系统调优配对问题从 profiling 入门到端到端优化，场景一一对齐。", "CUDA 侧 nsys/ncu 成熟 vs CANN 侧 msprof 学习曲线——直接对比工具可得性。", "记录相同场景下定位瓶颈所需的工具切换次数。"]
     };
 
+    let currentJourney = 'workflow';
     let currentRole = 'app';
-    let currentLevel = 'novice';
     let selectedCell = null;
 
-    function renderCellContent(l2, l1i, l2i) {
-      const id = `c-${l1i}-${l2i}`;
-      return `<div class="cell-body" id="${id}" data-l1="${l1i}" data-l2="${l2i}" onclick="selectCell(${l1i},${l2i})">
+    function findTaskInRole(roleId, taskKey) {
+      for (const l1 of DATA[roleId]) {
+        const l2 = l1.l2.find(t => t.key === taskKey);
+        if (l2) return { l1, l2 };
+      }
+      return null;
+    }
+
+    function renderCellContent(l2, roleId) {
+      const id = roleId ? `c-${roleId}-${l2.key}` : `c-${l2.key}`;
+      const click = roleId
+        ? `selectCellRole('${l2.key}','${roleId}')`
+        : `selectCell('${l2.key}')`;
+      return `<div class="cell-body" id="${id}" data-task="${l2.key}" onclick="${click}">
         ${l2.pairs.map((p, i) => renderPairBlock(p, i, true)).join('')}
       </div>`;
     }
 
-    function renderTableRows(data) {
-      return data.map((l1, i) => {
+    function renderWorkflowTableRows(data) {
+      return data.map(l1 => {
         const rowspan = l1.l2.length;
         return l1.l2.map((l2, j) => {
           const l1Cell = j === 0
@@ -300,50 +401,237 @@
           return `<tr>
             ${l1Cell}
             <th class="l2-col">${l2.name}</th>
-            <td class="content-col">${renderCellContent(l2, i, j)}</td>
+            <td class="content-col">${renderCellContent(l2)}</td>
           </tr>`;
         }).join('');
       }).join('');
     }
 
+    function renderRoleMatrixRows() {
+      const taskTree = filterTaskTree(DATA.app);
+      const roleIds = Object.keys(ROLES);
+      return taskTree.map(l1 => {
+        const rowspan = l1.l2.length;
+        return l1.l2.map((l2, j) => {
+          const l1Cell = j === 0
+            ? `<th class="l1-col" rowspan="${rowspan}">${l1.short}</th>`
+            : '';
+          const roleCells = roleIds.map(roleId => {
+            const hit = findTaskInRole(roleId, l2.key);
+            const cell = hit ? renderCellContent(hit.l2, roleId) : '';
+            return `<td class="content-col role-matrix-col">${cell}</td>`;
+          }).join('');
+          return `<tr>
+            ${l1Cell}
+            <th class="l2-col">${l2.name}</th>
+            ${roleCells}
+          </tr>`;
+        }).join('');
+      }).join('');
+    }
+
+    function renderRoleTableHead() {
+      const heads = Object.entries(ROLES).map(([, r]) =>
+        `<th class="role-head">${r.name}</th>`
+      ).join('');
+      return `<thead>
+        <tr>
+          <th class="l1-col" style="position:sticky;left:0;z-index:4;">阶段</th>
+          <th class="l2-col" style="position:sticky;left:96px;z-index:4;">任务</th>
+          ${heads}
+        </tr>
+      </thead>`;
+    }
+
+    function updateLegend() {
+      const el = document.getElementById('legendMode');
+      if (!el) return;
+      el.textContent = currentJourney === 'workflow'
+        ? `当前视图：按工作流阶段 · ${filterTaskTree(DATA.app).reduce((n, l1) => n + l1.l2.length, 0)} 个任务 · 四角色横向对照`
+        : `当前视图：按开发者角色 · ${ROLES[currentRole].name} · ${filterTaskTree(DATA[currentRole]).reduce((n, l1) => n + l1.l2.length, 0)} 个任务`;
+    }
+
     function render() {
-      document.getElementById('roleDesc').innerHTML =
-        `<h2>${ROLES[currentRole].name} · ${LEVELS[currentLevel].name}</h2><p>${ROLES[currentRole].desc} ${LEVELS[currentLevel].desc}</p>`;
+      document.getElementById('roleGroup').style.display =
+        currentJourney === 'role' ? '' : 'none';
 
-      const data = DATA[currentRole][currentLevel];
+      if (currentJourney === 'workflow') {
+        document.getElementById('roleDesc').innerHTML =
+          `<h2>工作流任务 · 全角色对照 · ${NOVICE.name}</h2><p>${JOURNEY_MODES.workflow.desc} ${NOVICE.desc}</p>`;
+      } else {
+        document.getElementById('roleDesc').innerHTML =
+          `<h2>${ROLES[currentRole].name} · ${NOVICE.name}</h2><p>${ROLES[currentRole].desc} ${NOVICE.desc}</p>`;
+      }
 
-      document.getElementById('journey').innerHTML = `
-        <table class="journey-table">
-          <tbody>${renderTableRows(data)}</tbody>
-        </table>`;
+      updateLegend();
+
+      if (currentJourney === 'workflow') {
+        document.getElementById('journey').innerHTML = `
+          <table class="journey-table">
+            ${renderRoleTableHead()}
+            <tbody>${renderRoleMatrixRows()}</tbody>
+          </table>`;
+      } else {
+        document.getElementById('journey').innerHTML = `
+          <table class="journey-table">
+            <tbody>${renderWorkflowTableRows(filterTaskTree(DATA[currentRole]))}</tbody>
+          </table>`;
+      }
 
       selectedCell = null;
       document.getElementById('cellDetail').classList.remove('visible');
 
-      const insights = INSIGHTS[currentRole][currentLevel];
+      const insights = currentJourney === 'role'
+        ? INSIGHTS[currentRole]
+        : [
+            '同一 L2 任务下横向比较四个角色：大模型是否都能给出角色语境匹配的 CUDA/CANN 平行路径？',
+            '关注算子开发者 vs 应用开发者在同一任务上的提问粒度差异，以及 CANN 侧是否系统性更绕路。',
+            '迁移工程师列可重点记录「源→目标」映射是否比其它角色更完整。'
+          ];
+      const insightTitle = currentJourney === 'role'
+        ? `${ROLES[currentRole].name}（${NOVICE.name}）`
+        : `工作流全角色对照（${NOVICE.name}）`;
       document.getElementById('insights').innerHTML =
-        `<h3>📊 产品研究洞察 · ${ROLES[currentRole].name}（${LEVELS[currentLevel].name}）</h3><ul>${insights.map(x => `<li>${x}</li>`).join('')}</ul>`;
+        `<h3>📊 产品研究洞察 · ${insightTitle}</h3><ul>${insights.map(x => `<li>${x}</li>`).join('')}</ul>`;
     }
 
-    function selectCell(l1i, l2i) {
-      document.querySelectorAll('.cell-body').forEach(el => el.classList.remove('active'));
-      const cell = document.getElementById(`c-${l1i}-${l2i}`);
-      if (cell) cell.classList.add('active');
-      selectedCell = { l1i, l2i };
-
-      const data = DATA[currentRole][currentLevel];
-      const l1 = data[l1i];
-      const l2 = l1.l2[l2i];
+    function showCellDetail(title, pairs) {
       const detail = document.getElementById('cellDetail');
       detail.classList.add('visible');
       detail.innerHTML = `
-        <h3>${data[l1i].short} › ${l2.name} · ${ROLES[currentRole].name}（${LEVELS[currentLevel].name}）</h3>
+        <h3>${title}</h3>
         <p style="font-size:.85rem;color:var(--muted);margin-bottom:1rem;">平行对比：相同场景、相同目的，分别向大模型提问 CUDA 与 CANN 路径，用于体验差异分析。</p>
-        ${l2.pairs.map((p, i) => renderPairBlock(p, i, false)).join('')}`;
+        ${pairs.map((p, i) => renderPairBlock(p, i, false)).join('')}`;
       detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
+    function selectCell(taskKey) {
+      document.querySelectorAll('.cell-body').forEach(el => el.classList.remove('active'));
+      const cell = document.getElementById(`c-${taskKey}`);
+      if (cell) cell.classList.add('active');
+      selectedCell = { taskKey, mode: 'workflow' };
+
+      const hit = findTaskInRole(currentRole, taskKey);
+      if (!hit) return;
+      showCellDetail(
+        `${hit.l1.short} › ${hit.l2.name} · ${ROLES[currentRole].name}（${NOVICE.name}）`,
+        hit.l2.pairs
+      );
+    }
+
+    function selectCellRole(taskKey, roleId) {
+      document.querySelectorAll('.cell-body').forEach(el => el.classList.remove('active'));
+      const cell = document.getElementById(`c-${roleId}-${taskKey}`);
+      if (cell) cell.classList.add('active');
+      selectedCell = { taskKey, roleId, mode: 'role' };
+
+      const hit = findTaskInRole(roleId, taskKey);
+      if (!hit) return;
+      showCellDetail(
+        `${hit.l1.short} › ${hit.l2.name} · ${ROLES[roleId].name}（${NOVICE.name}）`,
+        hit.l2.pairs
+      );
+    }
+
+    function renderMd(md) {
+      const lines = md.split('\n');
+      const out = [];
+      let inList = false;
+      window._mdTable = [];
+      const flushTable = () => {
+        if (window._mdTable.length) {
+          out.push(renderMdTable(window._mdTable));
+          window._mdTable = [];
+        }
+      };
+      const flushList = () => {
+        if (inList) { out.push('</ul>'); inList = false; }
+      };
+      for (const line of lines) {
+        const t = line.trim();
+        if (!t) { flushList(); continue; }
+        if (t === '---') { flushList(); flushTable(); out.push('<hr>'); continue; }
+        if (t.startsWith('#### ')) { flushList(); flushTable(); out.push('<h5>' + t.slice(5) + '</h5>'); continue; }
+        if (t.startsWith('### ')) { flushList(); flushTable(); out.push('<h4>' + t.slice(4) + '</h4>'); continue; }
+        if (t.startsWith('## ')) { flushList(); flushTable(); out.push('<h3>' + t.slice(3) + '</h3>'); continue; }
+        if (t.startsWith('# ')) { flushList(); flushTable(); out.push('<h2>' + t.slice(2) + '</h2>'); continue; }
+        if (t.startsWith('|')) {
+          flushList();
+          window._mdTable.push(t);
+          continue;
+        }
+        flushTable();
+        if (t.startsWith('> ')) {
+          flushList();
+          out.push('<blockquote>' + t.slice(2).replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>') + '</blockquote>');
+          continue;
+        }
+        if (t.startsWith('- ')) {
+          if (!inList) { out.push('<ul>'); inList = true; }
+          const item = t.slice(2)
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.+?)\*/g, '<em>$1</em>')
+            .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+          out.push('<li>' + item + '</li>');
+          continue;
+        }
+        flushList();
+        out.push('<p>' + t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>') + '</p>');
+      }
+      flushList();
+      flushTable();
+      return out.join('\n');
+    }
+
+    function renderMdTable(rows) {
+      const cells = rows.filter(r => !/^\|[\s\-:|]+\|$/.test(r.trim()));
+      if (!cells.length) return '';
+      const parse = r => r.split('|').slice(1, -1).map(c => c.trim());
+      const head = parse(cells[0]);
+      const body = cells.slice(1).map(parse);
+      let html = '<table><thead><tr>' + head.map(h => '<th>' + h + '</th>').join('') + '</tr></thead><tbody>';
+      body.forEach(row => { html += '<tr>' + row.map(d => '<td>' + d + '</td>').join('') + '</tr>'; });
+      return html + '</tbody></table>';
+    }
+
+    async function loadTocDoc(filename) {
+      const el = document.getElementById('taxonomyMd');
+      el.innerHTML = '<p style="color:var(--muted);">加载中…</p>';
+      try {
+        const r = await fetch(filename);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        el.innerHTML = renderMd(await r.text());
+      } catch (e) {
+        el.innerHTML = '<p style="color:var(--muted);">无法加载 <code>' + filename + '</code></p>';
+      }
+    }
+
+    function initTocTabs() {
+      document.querySelectorAll('.toc-tab').forEach(btn => {
+        btn.onclick = () => {
+          document.querySelectorAll('.toc-tab').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          loadTocDoc(btn.dataset.doc);
+        };
+      });
+      loadTocDoc('journey-taxonomy.md');
+    }
+
     function initControls() {
+      const journeyBtns = document.getElementById('journeyBtns');
+      journeyBtns.innerHTML = '';
+      Object.entries(JOURNEY_MODES).forEach(([id, m]) => {
+        const b = document.createElement('button');
+        b.className = 'btn' + (id === currentJourney ? ' active' : '');
+        b.textContent = m.name;
+        b.onclick = () => {
+          currentJourney = id;
+          initControls();
+          render();
+        };
+        journeyBtns.appendChild(b);
+      });
+
       const roleBtns = document.getElementById('roleBtns');
       roleBtns.innerHTML = '';
       Object.entries(ROLES).forEach(([id, r]) => {
@@ -353,23 +641,13 @@
         b.onclick = () => { currentRole = id; initControls(); render(); };
         roleBtns.appendChild(b);
       });
-      document.getElementById('levelLabel').textContent =
-        `用户经验 · ${ROLES[currentRole].name}`;
-      const levelBtns = document.getElementById('levelBtns');
-      levelBtns.innerHTML = '';
-      Object.entries(LEVELS).forEach(([id, l]) => {
-        const b = document.createElement('button');
-        b.className = 'btn' + (id === currentLevel ? ' active' : '');
-        b.textContent = l.name;
-        b.onclick = () => { currentLevel = id; initControls(); render(); };
-        levelBtns.appendChild(b);
-      });
     }
 
     try {
       buildData();
       initControls();
       render();
+      initTocTabs();
     } catch (err) {
       console.error(err);
       document.getElementById('roleDesc').innerHTML =

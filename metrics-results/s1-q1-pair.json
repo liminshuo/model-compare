@@ -5,7 +5,7 @@
   "cann_id": "cann-s1-q1",
   "cuda_prompt": "帮我在 PyTorch 官方文档里查 vector add 有没有原生算子，并给出对应文档链接。",
   "cann_prompt": "帮我在 torch_npu 支持清单里查目标算子是否支持，并注明版本要求。",
-  "scored_at": "2026-06-12T03:35:00.251219Z",
+  "scored_at": "2026-06-15T11:30:52.463535Z",
   "metrics": [
     {
       "metric": "Recall@k",
@@ -115,25 +115,25 @@
       "delta": -0.333
     },
     {
-      "metric": "HalRate",
+      "metric": "VerAcc",
       "module": "信息时效性与 API 幻觉",
       "layer": "内容层",
       "layer_key": "content",
       "cuda": {
-        "value": 0.0,
-        "detail": "引用 Claude 非事实源（不计致命）",
-        "auto": "manual",
+        "value": 1.0,
+        "detail": "无版本陈述且无错误版本（或未要求版本）",
+        "auto": "semi",
         "module": "信息时效性与 API 幻觉",
         "layer": "内容层"
       },
       "cann": {
-        "value": 0.111,
-        "detail": "「通常已映射」缺逐条清单引用",
-        "auto": "manual",
+        "value": 0.0,
+        "detail": "任务要求注明版本但未给出可核查版本陈述",
+        "auto": "semi",
         "module": "信息时效性与 API 幻觉",
         "layer": "内容层"
       },
-      "delta": 0.111
+      "delta": -1.0
     },
     {
       "metric": "Cov@checklist",
